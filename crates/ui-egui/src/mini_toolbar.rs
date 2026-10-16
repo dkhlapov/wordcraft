@@ -212,7 +212,7 @@ fn content(app: &mut WordApp, ui: &mut egui::Ui, t: &Tokens) {
     };
 
     row(ui, app, &|ui, app| {
-        let font = st.get("font").and_then(Value::as_str).unwrap_or("").to_string();
+        let font = st.get("fontShown").and_then(Value::as_str).unwrap_or("").to_string();
         let font = app.previews.font_shown(&font);
         let fams = app.previews.families();
         let prev = app.previews.font_preview_fn();
