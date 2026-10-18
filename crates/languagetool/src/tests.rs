@@ -198,6 +198,11 @@ fn credentials_never_go_over_plain_http_to_another_host() {
     for ok in ["http://localhost:8081", "http://127.0.0.1:8081", "http://[::1]:8081"] {
         assert!(acct(ok, "u").endpoint().is_ok(), "{ok}");
     }
+    for bad in
+        ["http://127.0.0.1@attacker.example", "http://127.attacker.example", "http://localhost@evil.example:80", "http://127.0.0.1.evil.example"]
+    {
+        assert!(matches!(acct(bad, "u").endpoint(), Err(LtError::BadServer(_))), "{bad}");
+    }
     // Without an account nothing secret is sent, so plain http stays allowed.
     assert!(acct("http://lt.example.org", "").endpoint().is_ok());
 }

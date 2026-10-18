@@ -2885,12 +2885,19 @@ impl ParaLayout {
 pub struct ProofRun {
     pub range: std::ops::Range<usize>,
     pub lang: wordcraft_proof::ProofLang,
+    /// The language tag as the document gives it (an external checker is asked in it).
+    pub tag: Option<String>,
     pub skip: bool,
 }
 
 impl ProofRun {
     fn of(range: std::ops::Range<usize>, rc: &ResolvedChar) -> ProofRun {
-        ProofRun { range, lang: wordcraft_proof::ProofLang::from_tag(rc.lang.as_deref()), skip: rc.no_proof || rc.hidden || rc.link.is_some() }
+        ProofRun {
+            range,
+            lang: wordcraft_proof::ProofLang::from_tag(rc.lang.as_deref()),
+            tag: rc.lang.clone(),
+            skip: rc.no_proof || rc.hidden || rc.link.is_some(),
+        }
     }
 }
 
@@ -2919,7 +2926,8 @@ pub fn paragraph_issues(p: &Paragraph, runs: &[ProofRun], spelling: &wordcraft_p
     let skip = |a: usize, b: usize| runs.iter().any(|r| r.skip && r.range.start < b && a < r.range.end);
     // The external checker's result for this text when it has one (#575), each issue in the
     // language of the run it is in; grammar marks only with `grammar`.
-    if let Some(found) = wordcraft_proof::check_external(&text) {
+    let external_language = wordcraft_proof::external::wanted(runs.first().and_then(|r| r.tag.as_deref()));
+    if let Some(found) = wordcraft_proof::check_external(&text, &external_language) {
         let lang_at = |at: usize| spans.iter().find(|(r, _)| r.contains(&at)).map(|(_, l)| *l).unwrap_or_default();
         return found
             .into_iter()
@@ -2939,6 +2947,14 @@ fn proof_issues(p: &Paragraph, runs: &[ProofRun], opts: &crate::ProofOptions) ->
         .into_iter()
         .map(|i| (i.start, i.end, i.kind == wordcraft_proof::IssueKind::Grammar))
         .collect()
+}
+
+/// The language an external checker is asked to check `p` in: the setting, or the language of
+/// its first run (the one the checker's scheduler uses).
+pub fn external_language(doc: &Document, p: &Paragraph) -> String {
+    let plain = CharProps::default();
+    let first = p.run_ranges().next().map(|(_, c)| c).unwrap_or(&plain);
+    wordcraft_proof::external::wanted(doc.styles.resolve_char(p.props.style.as_deref(), first).lang.as_deref())
 }
 
 /// Text for proofing with the same byte offsets: inline objects and tracked deletions become
