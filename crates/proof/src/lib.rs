@@ -1395,7 +1395,7 @@ mod tests {
 
     /// The checks a paragraph gets ([`check_external`] first, else the built-in English ones).
     fn check(text: &str) -> Vec<Issue> {
-        check_external(text, "en-US").unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true))
+        check_external(text, "en-US").unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true, false))
     }
 
     /// #575: the spelling options apply to an external checker's spelling issues too.
