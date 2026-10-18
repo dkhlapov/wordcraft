@@ -1387,7 +1387,7 @@ mod tests {
 
     /// The checks a paragraph gets ([`check_external`] first, else the built-in English ones).
     fn check(text: &str) -> Vec<Issue> {
-        check_external(text).unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true))
+        check_external(text).unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true, false))
     }
 
     /// #575: an external checker's result replaces the built-in checks for exactly the text it
