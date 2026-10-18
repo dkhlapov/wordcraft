@@ -252,6 +252,8 @@ pub enum Dialog {
         /// into inside and outside; `multiple_was` as opened (applied only if changed, #1836).
         multiple: MultiplePages,
         multiple_was: MultiplePages,
+        /// The mode at the end of the previous frame, to spot the switch to Book fold.
+        multiple_prev: MultiplePages,
         /// Sheets per booklet for a Book fold; 0 = all.
         sheets: u16,
         /// Document grid: kind (0 none, 1 lines, 2 lines and characters, 3 snap to characters),
@@ -1058,6 +1060,7 @@ impl Dialog {
                     landscape: sp.landscape,
                     multiple: app.session.doc.settings.multiple_pages(),
                     multiple_was: app.session.doc.settings.multiple_pages(),
+                    multiple_prev: app.session.doc.settings.multiple_pages(),
                     sheets: app.session.doc.settings.book_fold_sheets,
                     grid,
                     grid_was: grid,
@@ -1466,8 +1469,8 @@ fn run_as_one_step(app: &mut WordApp, commands: Vec<(&str, Value)>) -> Result<()
 /// Page Setup's Paper group (#1433): a Paper size list (the named sizes and Custom size) and
 /// the width and height. The fields follow the orientation (the wide side is the width in
 /// landscape), and a typed size that is wider than tall turns the orientation to landscape.
-fn page_paper_group(ui: &mut Ui, paper: &mut (f32, f32), landscape: &mut bool, custom: &mut bool) {
-    if (*landscape && paper.0 < paper.1) || (!*landscape && paper.0 > paper.1) {
+fn page_paper_group(ui: &mut Ui, paper: &mut (f32, f32), landscape: &mut bool, custom: &mut bool, lock: bool) {
+    if !lock && ((*landscape && paper.0 < paper.1) || (!*landscape && paper.0 > paper.1)) {
         *paper = (paper.1, paper.0);
     }
     let unit = crate::options::unit();
@@ -1500,7 +1503,7 @@ fn page_paper_group(ui: &mut Ui, paper: &mut (f32, f32), landscape: &mut bool, c
         let w = ui.add(egui::DragValue::new(&mut paper.0).speed(3.6 / ppu).range(range.clone()).measure(unit).max_decimals(2));
         ui.label(tl!(l.height));
         let h = ui.add(egui::DragValue::new(&mut paper.1).speed(3.6 / ppu).range(range).measure(unit).max_decimals(2));
-        if (w.changed() || h.changed()) && paper.0 != paper.1 {
+        if !lock && (w.changed() || h.changed()) && paper.0 != paper.1 {
             *landscape = paper.0 > paper.1;
         }
         ui.end_row();
@@ -2045,6 +2048,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             landscape,
             multiple,
             multiple_was,
+            multiple_prev,
             sheets,
             rtl,
             grid,
@@ -2057,10 +2061,15 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
         } => {
             // A booklet is printed on a landscape sheet, and the margins then read inside/outside.
             let book = *multiple == MultiplePages::BookFold;
+            // Only the frame that switches to Book fold turns the page and margins; after that the
+            // orientation stays locked, so editing the paper size can't rotate the margins again.
+            let entering_book = book && *multiple_prev != MultiplePages::BookFold;
             let inside = matches!(*multiple, MultiplePages::Mirror | MultiplePages::BookFold);
-            if book && !*landscape {
+            if entering_book && !*landscape {
                 // The margin fields turn with the page, as `layout.orientation` turns the section's.
                 (*top, *bottom, *left, *right) = (*left, *right, *bottom, *top);
+            }
+            if entering_book {
                 *landscape = true;
             }
             ui.label(egui::RichText::new(tl!("Margins")).font(semibold(12.5)));
@@ -2113,7 +2122,11 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                     combo.response.labelled_by(label.id);
                 });
             }
-            page_paper_group(ui, paper, landscape, paper_custom);
+            page_paper_group(ui, paper, landscape, paper_custom, book && !entering_book);
+            if book {
+                *landscape = true;
+            }
+            *multiple_prev = *multiple;
             ui.label(egui::RichText::new(tl!("Document Grid")).font(semibold(12.5)));
             ui.horizontal_wrapped(|ui| {
                 ui.radio_value(&mut grid.0, 0, tl!("No grid"));
@@ -2140,6 +2153,9 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             let (mut ok, cancel) = buttons(ui, tl!("OK"));
             if ok {
                 // Everything OK changes is one undo step; a refused command applies nothing.
+                if book && paper.0 < paper.1 {
+                    *paper = (paper.1, paper.0);
+                }
                 let result = page_layout_commands(app, (*paper, *paper_was), *landscape, (*top, *bottom, *left, *right), *multiple)
                     .map_err(|e| tl!(e).to_string())
                     .and_then(|mut commands| {
@@ -4748,6 +4764,33 @@ mod tests {
         h.get(egui_kittest::kittest::By::new().label_contains("More Paper Sizes…")).click();
         h.run_steps(2);
         assert_eq!(h.state().dialog.as_ref().map(|d| d.name()), Some("pageSetup"));
+    }
+
+    /// Switching to Book fold turns the margins once; editing the paper size afterwards leaves the
+    /// margins and the typed size alone (the orientation stays locked).
+    #[test]
+    fn page_setup_book_fold_rotates_margins_once() {
+        use wordcraft_doc::section::MultiplePages;
+        let mut h = app_harness(app_with("Page"));
+        h.state_mut().run("ui.dialog", json!({"name": "pageSetup"})).unwrap();
+        h.run_steps(2);
+        if let Some(Dialog::PageSetup { top, bottom, left, right, multiple, .. }) = h.state_mut().dialog.as_mut() {
+            (*top, *bottom, *left, *right) = (1.0, 2.0, 3.0, 4.0);
+            *multiple = MultiplePages::BookFold;
+        }
+        h.run_steps(2);
+        let margins = |h: &egui_kittest::Harness<'static, WordApp>| match &h.state().dialog {
+            Some(Dialog::PageSetup { top, bottom, left, right, .. }) => (*top, *bottom, *left, *right),
+            _ => panic!("open"),
+        };
+        let turned = margins(&h);
+        assert_eq!(turned, (3.0, 4.0, 2.0, 1.0), "turned once on entry");
+        if let Some(Dialog::PageSetup { paper, .. }) = h.state_mut().dialog.as_mut() {
+            *paper = (300.0, 500.0);
+        }
+        h.run_steps(4);
+        assert_eq!(margins(&h), turned, "later frames leave the margins alone");
+        assert!(matches!(&h.state().dialog, Some(Dialog::PageSetup { landscape: true, paper: (300.0, 500.0), .. })));
     }
 
     /// #1836: Page Setup's Multiple pages list shows the document's mode, labels the margins
