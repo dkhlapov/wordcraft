@@ -2383,8 +2383,10 @@ fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layo
         app.canvas.unit_drag = None;
         let prev_multi = app.canvas.multi_drag.take();
         // A double-click that enters or leaves a header/footer is handled on release.
-        let hf_switch =
-            (hf_zone.is_some() && story == StoryRef::Body) || (matches!(story, StoryRef::Part(_)) && !in_text_box(app) && hf_zone.is_none());
+        // (Into another header/footer too: the same rule as the release below, #2826.)
+        let hf_switch = hf_zone.is_some_and(|(shown, _)| {
+            story == StoryRef::Body || (shown != Some(story) && matches!(part_kind(app, story), Some(PartKind::Header | PartKind::Footer)))
+        }) || (matches!(story, StoryRef::Part(_)) && !in_text_box(app) && hf_zone.is_none());
         // Clicking into a footnote/endnote or a text box edits it; clicking outside a text box goes
         // back to where it is. While editing a header/footer, only its own text boxes are in reach.
         let story = {
@@ -4222,6 +4224,53 @@ mod tests {
         }
         assert_eq!(h.state().session.doc.plain_text(first), "Cover");
         assert_eq!(h.state_mut().session.layout().pages[0].header_story.map(StoryRef::Part), Some(first));
+    }
+
+    /// #788: with text selected in page 1's own header (Different First Page), a Ctrl/⌘+double-
+    /// click on page 2's header still goes there instead of adding a word.
+    #[test]
+    fn ctrl_double_click_reaches_another_header_with_text_selected() {
+        use egui::{Event, Modifiers, PointerButton};
+        let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), Default::default());
+        a.run("text.insert", json!({"text": "Page one"})).unwrap();
+        a.run("insert.pageBreak", json!({})).unwrap();
+        a.run("text.insert", json!({"text": "Page two"})).unwrap();
+        a.run("view.commentsPane", json!({"value": false})).unwrap();
+        a.run("insert.header", json!({"text": "Head"})).unwrap();
+        let head = a.session.sel.focus.story;
+        a.run("layout.differentFirstPage", json!({"value": true})).unwrap();
+        a.run("insert.editHeader", json!({"page": 0})).unwrap();
+        a.run("text.insert", json!({"text": "Cover"})).unwrap();
+        let cover = a.session.sel.focus.story;
+        assert_ne!(cover, head);
+        a.run("select.all", json!({})).unwrap();
+        assert!(!a.session.sel.is_collapsed());
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 2200.0)).with_step_dt(1.0 / 60.0).build_ui_state(
+            |ui, app: &mut WordApp| {
+                let ctx = ui.ctx().clone();
+                app.logic(&ctx);
+                app.ui(ui);
+            },
+            a,
+        );
+        for _ in 0..6 {
+            h.step();
+        }
+        let page = h.state_mut().session.layout().pages[1].clone();
+        assert_eq!(page.header_story.map(StoryRef::Part), Some(head));
+        let p = page_to_screen(h.state_mut(), 1, page.body.right() - 40.0, page.body.y / 2.0).expect("top margin on screen");
+        let ctrl = Modifiers { ctrl: true, command: true, ..Default::default() };
+        h.event(Event::ModifiersChanged(ctrl));
+        h.event(Event::PointerMoved(p));
+        h.step();
+        for _ in 0..2 {
+            h.event(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: true, modifiers: ctrl });
+            h.step();
+            h.event(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: false, modifiers: ctrl });
+            h.step();
+        }
+        assert_eq!(h.state().session.sel.focus.story, head, "page 2's header, not page 1's");
+        assert!(h.state().session.selection_pieces().is_none());
     }
 
     /// #513: right-clicking a picture selects it and offers Wrap Text, as in Word; choosing
