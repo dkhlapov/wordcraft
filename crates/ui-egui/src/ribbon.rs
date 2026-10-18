@@ -905,6 +905,16 @@ fn painter_double_click(app: &mut WordApp) {
     let _ = app.run("edit.formatPainter", json!({"sticky": true}));
 }
 
+/// The Text Highlight Color button's bar: the last highlight used (an OOXML name), if it has a colour.
+pub(crate) fn highlight_swatch(name: &str) -> Option<egui::Color32> {
+    wordcraft_doc::props::Highlight::ALL.iter().find(|h| h.ooxml() == name).and_then(|h| h.rgb()).map(crate::theme::c32)
+}
+
+/// The Shading button's bar: the last shading used (hex), if it parses.
+pub(crate) fn shading_swatch(hex: &str) -> Option<egui::Color32> {
+    wordcraft_doc::Rgb::parse(hex).map(crate::theme::c32)
+}
+
 fn home(app: &mut WordApp, ui: &mut Ui) {
     let st = app.session.run("format.state", &json!({})).unwrap_or_default();
     let flag = |k: &str| st.get(k).and_then(Value::as_bool).unwrap_or(false);
@@ -1004,7 +1014,7 @@ fn home(app: &mut WordApp, ui: &mut Ui) {
                     mi(ui, app, "Double Strikethrough", "format.doubleStrikethrough", json!({}));
                 });
                 let hl = app.canvas.last_highlight.clone();
-                let hl_sw = wordcraft_doc::props::Highlight::ALL.iter().find(|h| h.ooxml() == hl).and_then(|h| h.rgb()).map(crate::theme::c32);
+                let hl_sw = highlight_swatch(&hl);
                 split(ui, app, "highlight", "Text Highlight Color", "format.highlight", json!({"color": hl}), false, hl_sw, |ui, app| {
                     let grid = wordcraft_doc::props::Highlight::ALL;
                     egui::Grid::new("hl").spacing(vec2(3.0, 3.0)).show(ui, |ui| {
@@ -1141,7 +1151,7 @@ fn home(app: &mut WordApp, ui: &mut Ui) {
                     "para.shading",
                     json!({"color": app.canvas.last_shading.clone()}),
                     false,
-                    wordcraft_doc::Rgb::parse(&app.canvas.last_shading).map(crate::theme::c32),
+                    shading_swatch(&app.canvas.last_shading),
                     |ui, app| {
                         mi(ui, app, "No Color", "para.shading", json!({"color": null}));
                         let theme = app.session.doc.settings.theme_colors.clone();
@@ -2715,7 +2725,7 @@ fn table_design(app: &mut WordApp, ui: &mut Ui) {
                 "table.shading",
                 json!({"color": app.canvas.last_shading.clone()}),
                 false,
-                wordcraft_doc::Rgb::parse(&app.canvas.last_shading).map(crate::theme::c32),
+                shading_swatch(&app.canvas.last_shading),
                 |ui, app| {
                     mi(ui, app, "No Color", "table.shading", json!({"color": null}));
                     let theme = app.session.doc.settings.theme_colors.clone();

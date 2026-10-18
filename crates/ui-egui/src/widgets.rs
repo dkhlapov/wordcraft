@@ -210,6 +210,12 @@ pub fn small(ui: &mut Ui, app: &mut WordApp, icon: &str, label: Option<&str>, ti
     resp
 }
 
+/// A split button's ink and accent. Colour commands (font colour, highlight, shading) draw their
+/// colour bar in the accent, so the swatch is the colour that will be applied.
+fn split_colors(on: bool, swatch: Option<Color32>, t: &Tokens) -> (Color32, Color32) {
+    if on { (t.icon, swatch.unwrap_or(t.accent)) } else { (t.text_disabled, t.text_disabled) }
+}
+
 /// A split button: the left part runs `id`, the arrow opens a menu filled by `menu`.
 pub fn split(
     ui: &mut Ui,
@@ -231,9 +237,7 @@ pub fn split(
     bg(ui, r, &resp, checked, &t);
     bg(ui, ar, &aresp, false, &t);
     let ic = Rect::from_center_size(r.center(), vec2(16.0, 16.0));
-    // Colour commands (font colour, highlight, shading) draw their colour bar in the accent, so the
-    // swatch is the colour that will be applied.
-    let (c, a) = if on { (t.icon, swatch.unwrap_or(t.accent)) } else { (t.text_disabled, t.text_disabled) };
+    let (c, a) = split_colors(on, swatch, &t);
     icons::paint(ui.painter(), ic, icon, c, a);
     icons::paint(ui.painter(), Rect::from_center_size(ar.center(), vec2(DROPDOWN, DROPDOWN)), "dropdown", c, c);
     let resp = tooltip(app, resp, tip, id);
@@ -1082,6 +1086,56 @@ mod tests {
         assert_eq!(after.2, w.inactive.weak_bg_fill);
         frame(vec![press(frameless.center(), true)]);
         assert_eq!(settle().3, t.pressed);
+    }
+
+    /// Clicks the main part of a split button for `id` (one press and release) and returns whether
+    /// the click ran the command (a ribbon run asks for the canvas focus).
+    fn click_split(id: &str) -> bool {
+        let session = wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("one two"));
+        let mut app = WordApp::new(session, crate::Services::default());
+        let ctx = egui::Context::default();
+        let at = std::cell::Cell::new(Rect::NOTHING);
+        let press = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
+        let frame = |events: Vec<egui::Event>, app: &mut WordApp| {
+            ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| {
+                at.set(Rect::from_min_size(ui.cursor().min, vec2(24.0, 22.0)));
+                split(ui, app, "cut", "Split", id, Value::Object(Default::default()), false, None, |_, _| {});
+            })
+            .drop_without_applying_deltas();
+        };
+        frame(vec![], &mut app);
+        let c = at.get().center();
+        app.canvas.want_focus = false;
+        frame(vec![egui::Event::PointerMoved(c)], &mut app);
+        frame(vec![press(c, true)], &mut app);
+        frame(vec![press(c, false)], &mut app);
+        frame(vec![], &mut app);
+        app.canvas.want_focus
+    }
+
+    /// A disabled split button ignores clicks; an enabled one runs its command.
+    #[test]
+    fn disabled_split_button_does_not_run_its_command() {
+        assert!(click_split("format.bold"), "an enabled split button runs its command");
+        // Nothing is selected, so Cut is disabled.
+        assert!(!click_split("edit.cut"), "a disabled split button ran its command");
+    }
+
+    /// Colour split buttons draw their bar in the colour they will apply (the last one used);
+    /// disabled, everything follows the disabled ink.
+    #[test]
+    fn split_colour_bar_follows_the_swatch() {
+        let t = Tokens::light();
+        let red = Color32::from_rgb(200, 0, 0);
+        assert_eq!(split_colors(true, Some(red), &t), (t.icon, red));
+        assert_eq!(split_colors(true, None, &t), (t.icon, t.accent));
+        assert_eq!(split_colors(false, Some(red), &t), (t.text_disabled, t.text_disabled));
+        // The ribbon's swatches are the last highlight and shading colours.
+        let yellow = wordcraft_doc::props::Highlight::Yellow.rgb().map(crate::theme::c32);
+        assert_eq!(crate::ribbon::highlight_swatch("yellow"), yellow);
+        assert_eq!(crate::ribbon::highlight_swatch("none"), None);
+        assert_eq!(crate::ribbon::shading_swatch("FF0000"), Some(Color32::from_rgb(255, 0, 0)));
+        assert_eq!(crate::ribbon::shading_swatch("not a colour"), None);
     }
 
     #[test]

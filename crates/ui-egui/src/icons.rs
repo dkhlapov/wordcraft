@@ -6,7 +6,8 @@
 //!
 //! # Grid and drawing
 //! - A 16 × 16 unit grid, drawn at 16 px (small buttons, menus, toolbars) or 32 px (large ribbon
-//!   buttons). Don't paint at other sizes.
+//!   buttons); the one exception is `dropdown`, also drawn at `widgets::DROPDOWN` (10 px) beside
+//!   labels, combos and split buttons. Don't paint at other sizes.
 //! - Stroke width comes from [`stroke_px`] (about 1.25 px at 16, 2 px at 32); never set a width
 //!   by hand. Bold lettering uses `Pen::heavy`.
 //! - Every corner is rounded with `CORNER` (lines, outlines and fills alike); arrow heads, checks
@@ -640,9 +641,9 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             }
         }
         "numbering" => {
-            for (i, y) in [3.0, 8.0, 13.0].iter().enumerate() {
-                pen.text(2.75, *y, 5.0, ["1", "2", "3"][i], if i == 0 { a } else { c }, true);
-                pen.line(&[(7.0, *y), (14.5, *y)]);
+            for (i, (y, n)) in [(3.0, "1"), (8.0, "2"), (13.0, "3")].into_iter().enumerate() {
+                pen.text(2.75, y, 5.0, n, if i == 0 { a } else { c }, true);
+                pen.line(&[(7.0, y), (14.5, y)]);
             }
         }
         "multilevel" => {
@@ -1075,9 +1076,9 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             dashes(pen, 8.0);
         }
         "lineNumbers" => {
-            for (i, y) in [3.0, 8.0, 13.0].iter().enumerate() {
-                pen.text(2.5, *y, 5.0, ["1", "2", "3"][i], a, true);
-                pen.line(&[(6.0, *y), (14.5, *y)]);
+            for (y, n) in [(3.0, "1"), (8.0, "2"), (13.0, "3")] {
+                pen.text(2.5, y, 5.0, n, a, true);
+                pen.line(&[(6.0, y), (14.5, y)]);
             }
         }
         "hyphenation" => {
@@ -1994,7 +1995,9 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.poly(&[(2.0, 2.0), (2.0, 14.0), (14.0, 14.0)], c);
             pen.poly(&[(4.5, 8.5), (4.5, 11.5), (7.5, 11.5)], a);
         }
-        "dropdown" => pen.line(&[(4.0, 6.0), (8.0, 10.0), (12.0, 6.0)]),
+        // A triangle filling most of its box: it is drawn at 9–12 pt beside combos and split
+        // buttons, where a smaller one shrank to a dot (#535).
+        "dropdown" => pen.fill(&[(1.5, 5.0), (14.5, 5.0), (8.0, 11.5)], c),
         "more" => {
             for x in [3.0, 8.0, 13.0] {
                 pen.dot(x, 8.0, 1.25, c);
@@ -2586,6 +2589,25 @@ mod tests {
             }
         }
         assert!(dup.is_empty(), "icons sharing a drawing: {dup:?}");
+    }
+
+    /// #535: the drop-down marker is drawn at `widgets::DROPDOWN` (10 px) beside combos and split
+    /// buttons; a filled triangle at least 7 × 3.5 px there, or it shrinks to a dot.
+    #[test]
+    fn dropdown_arrow_keeps_its_footprint() {
+        let ctx = context();
+        let side = crate::widgets::DROPDOWN;
+        let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
+        let mut full = ctx.run_ui(input, |ui| {
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+            paint(&painter, Rect::from_min_size(Pos2::ZERO, vec2(side, side)), "dropdown", Color32::from_gray(66), Color32::from_gray(66));
+        });
+        let shapes = std::mem::take(&mut full.shapes);
+        full.drop_without_applying_deltas();
+        let filled = shapes.iter().any(|s| matches!(&s.shape, Shape::Path(p) if p.fill != Color32::TRANSPARENT));
+        assert!(filled, "the drop-down arrow is a filled triangle");
+        let ext = shapes.iter().fold(Rect::NOTHING, |r, s| r.union(s.shape.visual_bounding_rect()));
+        assert!(ext.width() >= 7.0 && ext.height() >= 3.5, "drop-down arrow is {} × {} px at {side} px", ext.width(), ext.height());
     }
 
     /// No name the interface uses falls through to the fallback tile.
