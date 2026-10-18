@@ -156,6 +156,11 @@ const VBA_PROJECT_PART: &str = "word/vbaProject.bin";
 /// flattened into their cells' paragraphs, so features that deep go unlisted (rare, odd files).
 const MAX_DEPTH: usize = wordcraft_formats::model::MAX_DEPTH;
 
+/// Deepest nesting `Walk` follows. The writers flatten tables nested past `MAX_DEPTH` into their
+/// cells' paragraphs but still write the cells' objects, so a chart or shape that deep is still
+/// lost and is looked for; only a hostile document goes past this.
+const WALK_DEPTH: usize = 64;
+
 /// The document being checked and the format.
 struct Walk<'a> {
     doc: &'a Document,
@@ -164,7 +169,7 @@ struct Walk<'a> {
 
 impl Walk<'_> {
     fn blocks(&self, bl: &Blocks, depth: usize, found: &mut BTreeSet<Loss>) {
-        if depth > MAX_DEPTH {
+        if depth > WALK_DEPTH {
             return;
         }
         for b in bl {
@@ -312,6 +317,22 @@ mod tests {
             for name in ["x.docx", "x.dotm", "x.xml", "x.json"] {
                 assert_eq!(format_losses(&doc, name), Vec::<Loss>::new(), "{name} keeps everything");
             }
+        }
+    }
+
+    /// A chart in a table nested past the writers' flattening depth is still lost, so still listed.
+    #[test]
+    fn a_chart_in_deeply_nested_tables_is_listed() {
+        let mut doc = with(&[("insert.chart", json!({"type": "pie"}))]);
+        let mut inner = doc.body.clone();
+        for _ in 0..(MAX_DEPTH + 2) {
+            let mut t = wordcraft_doc::table::Table::new(1, 1, 100.0);
+            t.rows[0].cells[0].blocks = inner;
+            inner = vec![std::sync::Arc::new(Block::Table(t))].into();
+        }
+        doc.body = inner;
+        for name in ["n.rtf", "n.odt"] {
+            assert!(format_losses(&doc, name).contains(&Loss::Charts), "{name}");
         }
     }
 
