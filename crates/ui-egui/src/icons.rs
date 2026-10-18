@@ -510,6 +510,11 @@ pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
     let tokens = crate::theme::Tokens::get(p.ctx());
     let tint = if disabled { Color32::TRANSPARENT } else { a.gamma_multiply(if tokens.dark { 0.28 } else { 0.16 }) };
     let pen = Pen { p, o: r.center() - vec2(8.0 * s, 8.0 * s), s, w: stroke_px(side), c, a, t: tint };
+    if let Some(kind) = name.strip_prefix("shape.")
+        && shape(&pen, kind)
+    {
+        return;
+    }
     let (green, red, orange) = if disabled { (c, c, c) } else { (tokens.green, tokens.red, tokens.orange) };
     draw(&pen, name, c, a, green, red, orange);
 }
@@ -2174,6 +2179,92 @@ fn dashes(pen: &Pen, y: f32) {
     for (x0, x1) in [(1.5, 3.5), (7.0, 9.0), (12.5, 14.5)] {
         pen.acc(&[(x0, y), (x1, y)]);
     }
+}
+
+/// The Insert › Shapes menu's icons: each shape kind (`insert.shape` ids) as a small outline.
+fn shape(pen: &Pen, kind: &str) -> bool {
+    let (c, a) = (pen.c, pen.a);
+    // Drawn on a 20-unit grid like the other menu icons; the pen's grid is 16.
+    let k = |pts: &[(f32, f32)]| -> Vec<(f32, f32)> { pts.iter().map(|&(x, y)| (x * 0.8, y * 0.8)).collect() };
+    let solid = |pts: &[(f32, f32)]| {
+        let pts = k(pts);
+        pen.fill(&pts, pen.t);
+        pen.poly(&pts, c);
+    };
+    let ends = |pts: &[(f32, f32)], arrow: bool| {
+        let pts = k(pts);
+        if let [.., from, tip] = pts.as_slice() {
+            if arrow {
+                pen.path(&pts[..pts.len() - 1], c);
+                pen.arrow(from.0, from.1, tip.0, tip.1, c);
+            } else {
+                pen.line(&pts);
+                pen.dot(tip.0, tip.1, 1.4, a);
+            }
+        }
+        if let Some(&first) = pts.first() {
+            pen.dot(first.0, first.1, 1.4, a);
+        }
+    };
+    let curve = || -> Vec<(f32, f32)> {
+        let (p0, p1, p2, p3) = ((4.0, 15.0), (12.0, 15.0), (8.0, 5.0), (16.0, 5.0));
+        (0..=16)
+            .map(|i| {
+                let s = i as f32 / 16.0;
+                let m = 1.0 - s;
+                let w = [m * m * m, 3.0 * m * m * s, 3.0 * m * s * s, s * s * s];
+                (w[0] * p0.0 + w[1] * p1.0 + w[2] * p2.0 + w[3] * p3.0, w[0] * p0.1 + w[1] * p1.1 + w[2] * p2.1 + w[3] * p3.1)
+            })
+            .collect()
+    };
+    match kind {
+        "rectangle" => solid(&[(3.0, 5.0), (17.0, 5.0), (17.0, 15.0), (3.0, 15.0)]),
+        "roundedRectangle" => pen.panel(2.4, 4.0, 13.6, 12.0, 2.4),
+        "ellipse" => {
+            let (center, radius) = (pen.pt(8.0, 8.0), vec2(6.0, 4.4) * pen.s);
+            pen.p.add(Shape::ellipse_filled(center, radius, pen.t));
+            pen.p.add(Shape::ellipse_stroke(center, radius, Stroke::new(pen.w, c)));
+        }
+        "triangle" => solid(&[(10.0, 3.5), (17.0, 16.5), (3.0, 16.5)]),
+        "diamond" => solid(&[(10.0, 3.0), (17.0, 10.0), (10.0, 17.0), (3.0, 10.0)]),
+        "line" => pen.line(&k(&[(4.0, 16.0), (16.0, 4.0)])),
+        "arrow" => {
+            let p = k(&[(4.0, 16.0), (16.5, 3.5)]);
+            pen.arrow(p[0].0, p[0].1, p[1].0, p[1].1, c);
+        }
+        "star" => {
+            let pts: Vec<(f32, f32)> = (0..10)
+                .map(|i| {
+                    let ang = -std::f32::consts::FRAC_PI_2 + i as f32 * std::f32::consts::PI / 5.0;
+                    let rad = if i % 2 == 0 { 8.0 } else { 3.3 };
+                    (10.0 + rad * ang.cos(), 10.8 + rad * ang.sin())
+                })
+                .collect();
+            let pts = k(&pts);
+            // Concave: the tinted core, then the outline.
+            pen.fill(&pts.iter().skip(1).step_by(2).copied().collect::<Vec<_>>(), pen.t);
+            pen.poly(&pts, c);
+        }
+        "heart" => {
+            let pts: Vec<(f32, f32)> = (0..32)
+                .map(|i| {
+                    let s = i as f32 / 32.0 * std::f32::consts::TAU;
+                    let x = 16.0 * s.sin().powi(3);
+                    let y = 13.0 * s.cos() - 5.0 * (2.0 * s).cos() - 2.0 * (3.0 * s).cos() - (4.0 * s).cos();
+                    (10.0 + x * 0.44, 9.6 - y * 0.44)
+                })
+                .collect();
+            pen.poly(&k(&pts), c);
+        }
+        "straightConnector" => ends(&[(4.0, 15.0), (16.0, 5.0)], false),
+        "straightArrowConnector" => ends(&[(4.0, 15.0), (16.0, 5.0)], true),
+        "elbowConnector" => ends(&[(4.0, 15.0), (10.0, 15.0), (10.0, 5.0), (16.0, 5.0)], false),
+        "elbowArrowConnector" => ends(&[(4.0, 15.0), (10.0, 15.0), (10.0, 5.0), (16.0, 5.0)], true),
+        "curvedConnector" => ends(&curve(), false),
+        "curvedArrowConnector" => ends(&curve(), true),
+        _ => return false,
+    }
+    true
 }
 
 /// Field brackets across the icon from `y0` to `y1` (mail merge fields).

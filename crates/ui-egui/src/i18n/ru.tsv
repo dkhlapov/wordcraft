@@ -1771,6 +1771,8 @@ preview	Title	Пример
 	Customize Ribbon	Настройка ленты
 	Add to Quick Access Toolbar	Добавить на панель быстрого доступа
 	Remove from Quick Access Toolbar	Удалить с панели быстрого доступа
+	Hide Quick Access Toolbar	Скрыть панель быстрого доступа
+	Show Quick Access Toolbar	Показать панель быстрого доступа
 	Customize the Ribbon…	Настроить ленту…
 	Customize Quick Access Toolbar…	Настроить панель быстрого доступа…
 	More Commands…	Другие команды…
@@ -2654,3 +2656,9 @@ preview	Title	Пример
 	All Fonts	Все шрифты
 	Spike	Копилка
 	Insert Spike	Вставить из копилки
+# Add Font status (#1789)
+	Added 1 font	Добавлен 1 шрифт
+	Added {n} fonts	Добавлено шрифтов: {n}
+	{added}; {count} couldn't be read: {names}	{added}; не удалось прочитать ({count}): {names}
+	{names} and {n} more	{names} и ещё {n}
+	{added}; {n} skipped (limit {max})	{added}; пропущено: {n} (лимит {max})

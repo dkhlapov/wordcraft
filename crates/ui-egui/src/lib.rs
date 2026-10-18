@@ -237,6 +237,10 @@ pub struct UiState {
     #[serde(skip)]
     pub print: print_page::PrintSettings,
     pub ribbon_collapsed: bool,
+    /// The Quick Access Toolbar shows in the title bar (#1945). Its menu's Hide Quick Access
+    /// Toolbar takes it away; Show Quick Access Toolbar (the ribbon's right-click menu, Customize
+    /// Ribbon › Quick Access Toolbar) brings it back. Kept between runs.
+    pub quick_access_toolbar: bool,
     pub recent: Vec<String>,
     /// Symbols inserted from the Symbol dialog, most recent first (#321).
     pub recent_symbols: Vec<dialogs_insert::RecentSymbol>,
@@ -356,6 +360,7 @@ impl Default for UiState {
             backstage_page: "home".into(),
             print: print_page::PrintSettings::default(),
             ribbon_collapsed: false,
+            quick_access_toolbar: true,
             recent: Vec::new(),
             recent_symbols: Vec::new(),
             recent_colors: Vec::new(),
@@ -1091,9 +1096,9 @@ impl WordApp {
         let go = match choice {
             SaveChoice::Cancel => false,
             SaveChoice::DontSave => true,
-            // A new document: ask where through Save As; the command runs once that has saved,
-            // which with the desktop's non-blocking dialog is on a later frame (#94).
-            SaveChoice::Save if self.session.path.is_none() && self.services.download.is_none() => {
+            // A new document or an import-only Word file: ask where through Save As. The command
+            // runs once that has saved, on a later frame with the non-blocking dialog (#94).
+            SaveChoice::Save if (self.session.path.is_none() || self.legacy_word_path()) && self.services.download.is_none() => {
                 return match self.save_as(file_dialogs::AfterSave::Continue { then, params, document }) {
                     file_dialogs::Asked::Done(r) => r,
                     file_dialogs::Asked::Pending => Ok(json!({"pending": "saveAs"})),
@@ -1119,9 +1124,23 @@ impl WordApp {
         self.execute_user(&then, params).map(|r| json!({"done": true, "result": r}))
     }
 
-    /// [`WordApp::execute`] for something the user did: a document that turns out to be
-    /// password-protected asks for the password (and opens with it) instead of failing (#55).
+    /// User commands can ask for a supported Save As target or an opening password (#55).
+    /// Scripts and agents use [`WordApp::execute`], which never opens these dialogs.
     pub(crate) fn execute_user(&mut self, id: &str, params: Value) -> Result<Value, String> {
+        // Legacy Word files are import-only (#2445). Only a user's implicit Save asks for
+        // a supported target; scripts and explicitly supplied paths keep their normal errors.
+        if id == "file.save"
+            && params.get("path").and_then(Value::as_str).is_none()
+            && self.has_document()
+            && self.legacy_word_path()
+            && self.services.download.is_none()
+        {
+            return match self.save_as(file_dialogs::AfterSave::Nothing) {
+                file_dialogs::Asked::Done(r) => r,
+                file_dialogs::Asked::Pending => Ok(json!({"pending": "saveAs"})),
+                file_dialogs::Asked::Busy => Ok(json!({"saved": false})),
+            };
+        }
         let retry = (id == "file.open").then(|| params.clone());
         let r = self.execute(id, params);
         if let (Err(e), Some(params)) = (&r, retry)
@@ -1482,6 +1501,17 @@ impl WordApp {
                 self.ui.ribbon_collapsed = !self.ui.ribbon_collapsed;
                 json!({"collapsed": self.ui.ribbon_collapsed})
             }
+            "ui.quickAccessToolbar" => {
+                // Hide Quick Access Toolbar (its menu) and Show Quick Access Toolbar (the ribbon's
+                // right-click menu, Customize Ribbon), #1945: `value` true shows the toolbar in
+                // the title bar, false hides it; no value toggles it.
+                match p.get("value") {
+                    None => self.ui.quick_access_toolbar = !self.ui.quick_access_toolbar,
+                    Some(Value::Bool(on)) => self.ui.quick_access_toolbar = *on,
+                    Some(_) => return Some(Err("`value` must be true or false".into())),
+                }
+                json!({"quickAccessToolbar": self.ui.quick_access_toolbar})
+            }
             "ui.keytips" => {
                 if let Some(v) = p.get("value") {
                     let Some(enabled) = v.as_bool() else { return Some(Err("`value` must be a boolean".into())) };
@@ -1788,6 +1818,16 @@ impl WordApp {
             self.status(i18n::fmt(tl!("Recipients: {count}"), &[("count", &records)]));
         }
         r
+    }
+
+    /// These paths have readers but no writer, so an interactive save needs another format.
+    fn legacy_word_path(&self) -> bool {
+        self.session
+            .path
+            .as_ref()
+            .and_then(|p| p.extension())
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("doc") || e.eq_ignore_ascii_case("dot"))
     }
 
     /// The name Save suggests: the open file's own Word format (so a .docm keeps its macros),
@@ -2109,6 +2149,15 @@ impl WordApp {
             raw.events.push(egui::Event::PointerMoved(*p));
         }
         let n = n.min(self.synthetic.len());
+        if self.synthetic.iter().take(n).any(|e| matches!(e, egui::Event::Key { .. } | egui::Event::Text(_))) {
+            // Control input belongs to this window's remembered widget even while another app
+            // is active. Give only this input frame egui focus, without requesting OS activation.
+            raw.focused = true;
+            if let (Some(ctx), Some(id)) = (&self.ctx, self.canvas.widget_id) {
+                // Canvas keys run before painting updates last frame's native focus flag.
+                self.canvas.focused = ctx.memory(|m| m.has_focus(id));
+            }
+        }
         raw.events.extend(self.synthetic.drain(..n));
     }
 
@@ -2522,6 +2571,7 @@ pub(crate) fn works_without_document(id: &str) -> bool {
             | "ui.dialog"
             | "ui.closeDialog"
             | "ui.collapseRibbon"
+            | "ui.quickAccessToolbar"
             | "ui.keytips"
             | "ui.dark"
             | "ui.theme"
@@ -2803,6 +2853,34 @@ mod tests {
         let old: UiState = serde_json::from_str(r#"{"tab":"Insert"}"#).unwrap();
         assert!(old.caret_animation && old.tab == "Insert");
         assert_eq!(a.run("ui.caretAnimation", json!({"value": true})).unwrap()["caretAnimation"], true);
+    }
+
+    /// #1945: showing or hiding the Quick Access Toolbar is a UI command (no value toggles it),
+    /// kept between runs; settings saved before it existed show the toolbar; it works with no
+    /// document open, like the other interface settings.
+    #[test]
+    fn quick_access_toolbar_is_a_ui_command_and_survives_a_restart() {
+        let mut a = app();
+        assert!(a.ui.quick_access_toolbar, "shown by default");
+        assert_eq!(a.run("ui.quickAccessToolbar", json!({})).unwrap(), json!({"quickAccessToolbar": false}), "no value toggles it");
+        assert_eq!(a.run("ui.quickAccessToolbar", json!({})).unwrap(), json!({"quickAccessToolbar": true}));
+        assert_eq!(a.run("ui.quickAccessToolbar", json!({"value": false})).unwrap(), json!({"quickAccessToolbar": false}));
+        for junk in [json!({"value": "no"}), json!({"value": 0}), json!({"value": null}), json!({"value": [true]})] {
+            assert!(a.run("ui.quickAccessToolbar", junk).is_err());
+        }
+        assert!(!a.ui.quick_access_toolbar, "a rejected value keeps the setting");
+        let saved = serde_json::to_string(&a.prefs()).unwrap();
+        assert!(saved.contains(r#""quickAccessToolbar":false"#), "{saved}");
+        let mut b = app();
+        b.apply_prefs(serde_json::from_str(&saved).unwrap());
+        assert!(!b.ui.quick_access_toolbar, "hidden after a restart");
+        let old: UiState = serde_json::from_str(r#"{"tab":"Insert"}"#).unwrap();
+        assert!(old.quick_access_toolbar && old.tab == "Insert", "older settings show the toolbar");
+        assert_eq!(a.run("ui.quickAccessToolbar", json!({"value": true})).unwrap()["quickAccessToolbar"], true);
+        let mut c = app();
+        c.start_screen();
+        assert!(!c.has_document());
+        assert_eq!(c.run("ui.quickAccessToolbar", json!({"value": false})).unwrap()["quickAccessToolbar"], false, "works without a document");
     }
 
     fn harness(a: WordApp) -> egui_kittest::Harness<'static, WordApp> {
@@ -4120,6 +4198,126 @@ mod tests {
         frame(&mut a, vec![btn(ribbon, false)]);
     }
 
+    fn control_frame(a: &mut WordApp, ctx: &egui::Context, focused: bool) {
+        let mut raw = egui::RawInput {
+            focused,
+            time: Some(ctx.input(|i| i.time) + 1.0 / 60.0),
+            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1280.0, 800.0))),
+            ..Default::default()
+        };
+        a.raw_input_hook(&mut raw);
+        ctx.run_ui(raw, |ui| {
+            a.logic(ui.ctx());
+            a.ui(ui);
+        })
+        .drop_without_applying_deltas();
+    }
+
+    fn control_input(a: &mut WordApp, ctx: &egui::Context, method: &str, params: Value) {
+        let (req, _reply) = ControlRequest::new(method, params);
+        let control::Outcome::Done(v) = control::handle(a, ctx, &req) else { panic!("input is queued") };
+        assert_eq!(v["result"]["queued"], true);
+    }
+
+    /// #2420: an inactive native window still delivers control input to its focused widget.
+    #[test]
+    fn control_keyboard_reaches_the_background_document_once() {
+        for focused in [true, false] {
+            let ctx = egui::Context::default();
+            let mut a = app();
+            a.run("document.setText", json!({"text": "Seed"})).unwrap();
+            for _ in 0..4 {
+                control_frame(&mut a, &ctx, true);
+            }
+            assert!(a.canvas.focused);
+            for _ in 0..2 {
+                control_frame(&mut a, &ctx, focused);
+            }
+            a.run("select.all", json!({})).unwrap();
+            // Two queued requests are delivered in order across the key's release boundary.
+            control_input(&mut a, &ctx, "ui.key", json!({"key": "b", "cmd": true}));
+            control_input(&mut a, &ctx, "ui.text", json!({"text": "Written"}));
+            control_frame(&mut a, &ctx, focused);
+            assert_eq!(a.session.doc.para_at(&a.session.sel.focus).unwrap().props_of_char(0).bold, Some(true), "focused={focused}: Mod+B applied");
+            assert_eq!(body_text(&a), "Seed", "text waits behind the key's release");
+            control_frame(&mut a, &ctx, focused);
+            assert_eq!(body_text(&a), "Written", "focused={focused}: text applied");
+            assert!(a.synthetic.is_empty());
+            let rev = a.session.rev();
+            for _ in 0..3 {
+                control_frame(&mut a, &ctx, true);
+            }
+            assert_eq!(a.session.rev(), rev, "foregrounding never replays an input");
+            a.run("edit.undo", json!({})).unwrap();
+            assert_eq!(body_text(&a), "Seed", "one Undo reverses the one text input");
+        }
+    }
+
+    #[test]
+    fn control_keyboard_keeps_the_background_widget_target() {
+        let ctx = egui::Context::default();
+        let mut a = app();
+        a.run("document.setText", json!({"text": "Seed"})).unwrap();
+        for _ in 0..4 {
+            control_frame(&mut a, &ctx, true);
+        }
+        a.run("edit.advancedFind", json!({})).unwrap();
+        for _ in 0..2 {
+            control_frame(&mut a, &ctx, true);
+        }
+        assert!(ctx.memory(|m| m.has_focus(egui::Id::new("find_what"))));
+        for _ in 0..2 {
+            control_frame(&mut a, &ctx, false);
+        }
+        control_input(&mut a, &ctx, "ui.text", json!({"text": "Needle"}));
+        control_frame(&mut a, &ctx, false);
+        assert!(matches!(&a.dialog, Some(dialogs::Dialog::Find { query, .. }) if query == "Needle"));
+        control_input(&mut a, &ctx, "ui.key", json!({"key": "Backspace"}));
+        control_frame(&mut a, &ctx, false);
+        assert!(matches!(&a.dialog, Some(dialogs::Dialog::Find { query, .. }) if query == "Needl"));
+        assert_eq!(body_text(&a), "Seed", "the Find field, not the document, owns the input");
+        control_input(&mut a, &ctx, "ui.key", json!({"key": "Escape"}));
+        control_frame(&mut a, &ctx, false);
+        assert!(a.dialog.is_none());
+        a.run("file.close", json!({})).unwrap();
+        for focused in [true, true, false, false] {
+            control_frame(&mut a, &ctx, focused);
+        }
+        assert!(matches!(a.dialog, Some(dialogs::Dialog::SaveChanges { .. })));
+        control_input(&mut a, &ctx, "ui.key", json!({"key": "Escape"}));
+        control_frame(&mut a, &ctx, false);
+        assert!(a.dialog.is_none());
+        assert!(a.session.dirty && a.has_document() && !a.quit_requested);
+        assert_eq!(body_text(&a), "Seed", "Cancel preserves the unsaved document");
+    }
+
+    #[test]
+    fn control_keyboard_preserves_native_focus_and_document_protection() {
+        let ctx = egui::Context::default();
+        let mut a = app();
+        a.run("document.setText", json!({"text": "Seed"})).unwrap();
+        for _ in 0..4 {
+            control_frame(&mut a, &ctx, true);
+        }
+        a.run("select.all", json!({})).unwrap();
+        a.run("review.restrict", json!({"mode": "readOnly"})).unwrap();
+        let doc = a.session.doc.clone();
+        for _ in 0..2 {
+            control_frame(&mut a, &ctx, false);
+        }
+        control_input(&mut a, &ctx, "ui.key", json!({"key": "b", "cmd": true}));
+        control_input(&mut a, &ctx, "ui.text", json!({"text": "Refused"}));
+        for _ in 0..3 {
+            control_frame(&mut a, &ctx, false);
+        }
+        assert_eq!(a.session.doc, doc, "control input respects the same protection as real keys");
+        assert!(a.synthetic.is_empty());
+        let mut native = egui::RawInput { focused: false, ..Default::default() };
+        a.raw_input_hook(&mut native);
+        assert!(!native.focused, "a frame without control keys keeps the native focus state");
+        assert!(!a.canvas.focused);
+    }
+
     /// The control channel's `ui.wheel` scrolls the canvas like a mouse wheel over it.
     #[test]
     fn control_wheel_scrolls_the_canvas() {
@@ -4811,6 +5009,60 @@ mod tests {
         assert_eq!(prompt(h.state()), None, "answered");
         assert!(!h.state().has_document() && !h.state().quit_requested, "Don't Save closes the document, not the window (#1712)");
         assert_eq!(std::fs::read(&path).unwrap(), before, "nothing was saved");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// #1015: focusing Save is not enough: its dialog must expose the question and any failed
+    /// save's explanation, so assistive technology has context for the three choices.
+    #[test]
+    fn save_prompt_exposes_its_context_to_accessibility() {
+        use egui::accesskit::Role;
+        use egui_kittest::kittest::{By, NodeT, Queryable};
+        let dir = scratch("save-accessibility");
+        let path = docx_on_disk(&dir, "Draft");
+        let mut a = app();
+        a.run("file.open", json!({"path": path.to_string_lossy()})).unwrap();
+        a.run("text.insert", json!({"text": "Revised "})).unwrap();
+        a.canvas.want_focus = true;
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                let ctx = ui.ctx().clone();
+                app.logic(&ctx);
+                app.ui(ui);
+            },
+            a,
+        );
+        h.run_steps(6);
+        assert!(h.state().canvas.focused);
+        h.state_mut().run("file.close", json!({})).unwrap();
+        h.run_steps(3);
+        let save = h.query_all_by_role(Role::Button).find(|n| n.accesskit_node().label().as_deref() == Some("Save") && n.is_focused()).unwrap();
+        let mut ancestor = save.parent();
+        let mut roles = Vec::new();
+        while let Some(node) = ancestor {
+            roles.push(node.accesskit_node().role());
+            ancestor = node.parent();
+        }
+        assert!(roles.contains(&Role::AlertDialog), "Save has no alert-dialog ancestor: {roles:?}");
+        let dialog = h.get(By::new().predicate(|n| n.role() == Role::AlertDialog));
+        let node = dialog.accesskit_node();
+        assert!(node.label().is_some_and(|s| s.contains("contract.docx") && s.contains("save changes")));
+        assert!(node.description().is_some_and(|s| s.contains("Your changes will be lost")));
+        for label in ["Save", "Don't Save", "Cancel"] {
+            assert!(dialog.query_by_role_and_label(Role::Button, label).is_some(), "missing {label}");
+        }
+        let reason = "Couldn't save contract.docx: disk full";
+        if let Some(dialogs::Dialog::SaveChanges { message, .. }) = &mut h.state_mut().dialog {
+            *message = reason.into();
+        }
+        h.run_steps(2);
+        let dialog = h.get(By::new().predicate(|n| n.role() == Role::AlertDialog));
+        assert!(dialog.accesskit_node().description().is_some_and(|s| s.contains(reason)));
+        h.key_press(egui::Key::Escape);
+        h.run_steps(3);
+        assert!(h.state().dialog.is_none());
+        assert!(h.state().canvas.focused && h.state().session.dirty);
+        assert!(body_text(h.state()).contains("Revised Draft"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

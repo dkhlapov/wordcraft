@@ -1549,6 +1549,8 @@
 	Customize Ribbon	リボンのユーザー設定
 	Add to Quick Access Toolbar	クイック アクセス ツール バーに追加
 	Remove from Quick Access Toolbar	クイック アクセス ツール バーから削除
+	Hide Quick Access Toolbar	クイック アクセス ツール バーを非表示にする
+	Show Quick Access Toolbar	クイック アクセス ツール バーを表示する
 	Customize the Ribbon…	リボンのユーザー設定…
 	Customize Quick Access Toolbar…	クイック アクセス ツール バーのユーザー設定…
 	More Commands…	その他のコマンド…
@@ -2257,3 +2259,9 @@
 	All Fonts	すべてのフォント
 	Spike	スパイク
 	Insert Spike	スパイクの挿入
+# Add Font status (#1789)
+	Added 1 font	フォントを 1 件追加しました
+	Added {n} fonts	フォントを {n} 件追加しました
+	{added}; {count} couldn't be read: {names}	{added}。読み込めなかったもの {count} 件: {names}
+	{names} and {n} more	{names} ほか {n} 件
+	{added}; {n} skipped (limit {max})	{added}。{n} 件をスキップしました (上限 {max})

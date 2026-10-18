@@ -1763,6 +1763,8 @@
 	Customize Ribbon	Přizpůsobit pás karet
 	Add to Quick Access Toolbar	Přidat na panel nástrojů Rychlý přístup
 	Remove from Quick Access Toolbar	Odebrat z panelu nástrojů Rychlý přístup
+	Hide Quick Access Toolbar	Skrýt panel nástrojů Rychlý přístup
+	Show Quick Access Toolbar	Zobrazit panel nástrojů Rychlý přístup
 	Customize the Ribbon…	Přizpůsobit pás karet…
 	Customize Quick Access Toolbar…	Přizpůsobit panel nástrojů Rychlý přístup…
 	More Commands…	Další příkazy…
@@ -2648,3 +2650,9 @@ preview	Title	Ukázka
 	All Fonts	Všechna písma
 	Spike	Sběrač
 	Insert Spike	Vložit ze sběrače
+# Add Font status (#1789)
+	Added 1 font	Přidáno 1 písmo
+	Added {n} fonts	Přidaná písma: {n}
+	{added}; {count} couldn't be read: {names}	{added}; nelze přečíst ({count}): {names}
+	{names} and {n} more	{names} a dalších {n}
+	{added}; {n} skipped (limit {max})	{added}; přeskočeno: {n} (limit {max})
