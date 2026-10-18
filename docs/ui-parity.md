@@ -67,7 +67,7 @@ Find selects the Results tab, including when it prefills selected text. Editing 
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-10-17 | trivial | Selection: with text selected, Ctrl/⌘+drag adds a separate piece and Ctrl/⌘+double-click a word (`select.add`); Copy, Cut, Delete, typing and formatting act on every piece in one undo step; Ctrl/⌘+click alone still selects a sentence (#788) |
+| 2026-10-17 | trivial | Selection: with text selected, Ctrl/⌘+drag adds a separate piece and Ctrl/⌘+double-click a word (`select.add`); Copy, Cut, Delete, typing and formatting act on every piece in one undo step; Ctrl/⌘+click alone still selects a sentence (on a link it follows the link) (#788) |
 | 2026-10-15 | trivial | File › Close (Mod+W, Mod+F4) closes the document and keeps the window, showing no page, as Word does (it quit the whole app); the window's close button still asks to save and quits (#1712) |
 | 2026-10-16 | trivial | Save Changes exposes an alert-dialog role, the document-specific question and loss/failure context to accessibility; full-app focus/ancestry regression. Native screen-reader verification remains pending. |
 | 2026-10-15 | trivial | Dialogs, the Read Aloud player and the file browser: the close control is a box at the title bar's right end, the full title-bar height and 1.6× as wide, all of it clickable; red with a white ✕ while the pointer is over it, darker red pressed, in both themes; Escape as before (#1885) |
