@@ -172,6 +172,8 @@ Imported Word 97–2003 `.doc`/`.dot` files now ask for a supported DOCX target 
 | 2026-10-16 | Control-channel keyboard and text input reaches the focused widget while the native window is inactive, without activating it; normal widget targets, dialogs and document protection remain in force (#2420) |
 | 2026-10-15 | Hide Quick Access Toolbar (#1945): the toolbar's menu ends with Hide Quick Access Toolbar, as Word's does; the ribbon's right-click menu and Customize Ribbon › Quick Access Toolbar offer Show Quick Access Toolbar; kept between runs; `ui.quickAccessToolbar {"value"?}` for scripts and MCP |
 | 2026-10-15 | Rulers: the numbers thin out as the page shrinks on screen (every 1, 2, 4… units, at least 30 px apart, the small ticks at least 4 px apart), give way to the indent, tab and column markers, and the margins get ticks only; both rulers span the caret's page at its own scale in One Page and Multiple Pages and follow the caret to another page (#1878) |
+| 2026-10-15 | Spelling as you type no longer flags the word being typed; the squiggle comes when the word ends or the caret leaves it, as in Word (#1552) |
+| 2026-10-15 | Text Highlight Color: No Color becomes the Highlight button's choice, as in Word, so the next click on the button removes highlighting instead of applying the colour picked before; the ribbon and the mini toolbar share one menu (#2105) |
 |---|---|
 | 2026-10-16 | Save Changes gives assistive technology a named alert dialog with the loss warning and any save failure; visual layout and save policy unchanged (#1015). Native screen-reader verification remains pending. |
 | 2026-10-15 | The font family caches are bounded (4096 families for text, 1024 for math, names over 256 bytes aren't remembered), so a document naming thousands of missing fonts can't grow memory; equation fonts are looked up again after a font is added or removed instead of keeping the old choice (#1354) |
@@ -473,6 +475,7 @@ Imported Word 97–2003 `.doc`/`.dot` files now ask for a supported DOCX target 
 | 2026-10-13 | The interface-translation audit runs in CI again (#1128): the size labels of Envelopes, Labels and Layout › Size are translated (`4,13 × 9,5 дюйма`) and use the region's decimal separator, and status-bar messages (table split and merge, ink replay, citations, SmartArt, Researcher, Design defaults), the Reading Mode toolbar, Go To and Search's Suggested heading are translated in every interface language, and the Read Aloud player no longer shows a speech error a frame before the status bar does, the race behind the audit's rare failure under load |
 | 2026-10-15 | Lists (#1683): a bullet stored as a private-use character its font can't draw (the font isn't installed) shows the level's default bullet (• ○ ▪); it used to be whatever an installed icon font has at that code, such as Font Awesome's Twitter logo |
 | 2026-10-15 | The web app keeps its preferences between visits (#2132): theme (dark mode), interface size, editing options and the rest of what the desktop app saves in `ui.json` are kept in the browser's `localStorage`, written as soon as they change |
+| 2026-10-17 | Saving into a folder that refuses a temporary file (macOS privacy protection, read-only folders, #2138) never overwrites an existing document in place: it is left untouched and the error says to use Save As to another folder or allow WordCraft access to the folder (System Settings › Privacy & Security › Files and Folders on macOS). A new file is created directly. Unit tests on Linux; not yet confirmed on a Mac |
 
 ## Revision history
 
@@ -531,6 +534,8 @@ Imported Word 97–2003 `.doc`/`.dot` files now ask for a supported DOCX target 
 | 2026-10-16 | trivial | Control keyboard/text input works in the inactive native window (#2420) |
 | 2026-10-15 | trivial | Progress log: Hide Quick Access Toolbar (#1945) |
 | 2026-10-15 | trivial | Progress log: native ink nested in groups and drawing canvases kept on save |
+| 2026-10-15 | trivial | Progress log: the word being typed gets no squiggle until the caret leaves it (#1552) |
+| 2026-10-15 | trivial | Progress log: Highlight No Color sticks to the button (#2105) |
 | 2026-10-15 | trivial | Progress log: web font saves wait for the IndexedDB transaction to complete (#1362) |
 | 2026-10-15 | trivial | Progress log: file opening checks regular file and size and bounds the read (#1333) |
 | 2026-10-14 | trivial | Progress log: row table border exceptions |
@@ -725,3 +730,4 @@ Imported Word 97–2003 `.doc`/`.dot` files now ask for a supported DOCX target 
 | 2026-10-15 | trivial | Progress log: dialog close box (#1885) |
 | 2026-10-15 | trivial | Progress log: mixed Hebrew/Latin text keeps its order in Word (#1543) |
 | 2026-10-15 | trivial | Progress log: ruler numbers by zoom, rulers follow the caret's page (#1878) |
+| 2026-10-17 | trivial | Progress log: saving into a folder that refuses a temporary file (#2138) |
