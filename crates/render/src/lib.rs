@@ -225,8 +225,8 @@ fn svg_for(doc: &Document, key: &str) -> Option<Option<Arc<wordcraft_svg::Svg>>>
 /// at device resolution for the part that is visible, so it is sharp at any zoom. A raster past
 /// the size cap is drawn at a lower resolution instead.
 fn draw_svg(ctx: &mut RenderContext, svg: &wordcraft_svg::Svg, r: &kurbo::Rect, crop: &[f32; 4], alpha: f32, view: Affine, visible: &kurbo::Rect) {
-    let [cl, ct, cr, cb] = crop.map(|v| if v.is_finite() { v.clamp(0.0, 0.95) as f64 } else { 0.0 });
-    let (fw, fh) = (r.width() / (1.0 - cl - cr).max(0.05), r.height() / (1.0 - ct - cb).max(0.05));
+    let [cl, ct, vis_w, vis_h] = wordcraft_metafile::crop_window(*crop);
+    let (fw, fh) = (r.width() / vis_w, r.height() / vis_h);
     let (fx, fy) = (r.x0 - cl * fw, r.y0 - ct * fh);
     let area = r.intersect(*visible);
     if area.width() <= 0.0 || area.height() <= 0.0 {

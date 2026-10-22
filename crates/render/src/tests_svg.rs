@@ -8,6 +8,10 @@ use wordcraft_layout::{LayoutCache, LayoutOptions, layout};
 const HALVES: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><rect width="5" height="10" fill="#ff0000"/><rect x="5" width="5" height="10" fill="#ffffff"/></svg>"##;
 
 fn doc_with(svg: &[u8]) -> (Document, wordcraft_layout::DocLayout, wordcraft_geom::Rect) {
+    doc_with_crop(svg, [0.0; 4])
+}
+
+fn doc_with_crop(svg: &[u8], crop: [f32; 4]) -> (Document, wordcraft_layout::DocLayout, wordcraft_geom::Rect) {
     let mut d = Document::new();
     let media = d.add_media(svg.to_vec(), "svg");
     let mut p = wordcraft_doc::Paragraph::new();
@@ -17,7 +21,7 @@ fn doc_with(svg: &[u8]) -> (Document, wordcraft_layout::DocLayout, wordcraft_geo
         h: 70.0,
         alt: String::new(),
         float: Default::default(),
-        crop: [0.0; 4],
+        crop,
         ole: None,
     };
     p.insert_object(0, obj, &Default::default()).unwrap();
@@ -64,4 +68,15 @@ fn unreadable_svg_keeps_the_grey_box() {
     let (d, l, rect) = doc_with(b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\"");
     let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
     assert_eq!(img.pixel((rect.x + rect.w / 2.0) as u32, (rect.y + rect.h / 2.0) as u32), [0xD0, 0xD0, 0xD0, 255]);
+}
+
+#[test]
+fn svg_crop_may_leave_less_than_five_percent() {
+    // Files crop this thin (#1899): 0.2% of the width is left, and 0.5% shows, as for any picture.
+    // That sliver is all red, so the whole picture is red; a 5% floor would show the white edge.
+    let (d, l, rect) = doc_with_crop(HALVES, [0.46, 0.0, 0.538, 0.0]);
+    let img = render_page(&d, &l.pages[0], 1.0, &RenderOptions::default());
+    let y = (rect.y + rect.h / 2.0) as u32;
+    let right = img.pixel((rect.x + rect.w * 0.9) as u32, y);
+    assert!(right[0] > 200 && right[1] < 60 && right[2] < 60, "the thin sliver fills the picture in red: {right:?}");
 }
