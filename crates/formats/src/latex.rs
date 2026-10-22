@@ -3229,7 +3229,7 @@ Caf\'e na\"ive \c{c}a \v{s}\'{e} and {\bfseries grouped bold} after.
         doc.body = vec![Arc::new(Block::Table(t_borderless))];
         let tex = export(&doc);
         assert!(!tex.contains("\\hline"));
-        let back = import(tex.as_bytes());
+        let back = import(tex.as_bytes()).unwrap();
         let Some(Block::Table(bt)) = back.body.first().map(|b| &**b) else { panic!() };
         assert!(bt.props.style.is_none(), "imported table should remain borderless");
 
@@ -3245,7 +3245,7 @@ Caf\'e na\"ive \c{c}a \v{s}\'{e} and {\bfseries grouped bold} after.
         doc_bordered.body = vec![Arc::new(Block::Table(t_bordered))];
         let tex_bordered = export(&doc_bordered);
         assert!(tex_bordered.contains("\\hline"));
-        let back_bordered = import(tex_bordered.as_bytes());
+        let back_bordered = import(tex_bordered.as_bytes()).unwrap();
         let Some(Block::Table(bt_bordered)) = back_bordered.body.first().map(|b| &**b) else { panic!() };
         assert!(bt_bordered.props.style.is_some(), "imported table should remain bordered");
     }
