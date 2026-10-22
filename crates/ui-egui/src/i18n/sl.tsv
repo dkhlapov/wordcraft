@@ -605,7 +605,7 @@
 	Danish	Danščina
 	Dark	Temno
 	Dark Mode	Temni način
-	Dark page (white text on black)	Temna stran (belo besedilo na črnem)
+	Never change the document page color	Nikoli ne spremeni barve strani dokumenta
 	Dark with Shadow	Temno s senco
 	Darkroom	Temnica
 	Dashed	Črtkano
@@ -2072,7 +2072,7 @@
 	Show changes at:	Prikaži spremembe pri:
 	Show changes in:	Prikaži spremembe v:
 	Show Comments	Prikaži komentarje
-	Show documents with their colours inverted, like View › Switch Modes. Saving, printing and PDFs are unchanged.	Prikaži dokumente z obrnjenimi barvami, kot Pogled › Preklopi način. Shranjevanje, tiskanje in PDF-ji ostanejo nespremenjeni.
+	Off, pages follow the theme: light in the light theme, dark in the dark theme. On, pages keep the document's own colour in every theme; only View › Switch Modes darkens them. Saving, printing and PDFs are unchanged.	Izklopljeno: strani sledijo temi, svetle v svetli in temne v temni temi. Vklopljeno: strani v vsaki temi obdržijo barvo dokumenta; zatemni jih le Pogled › Preklopi način. Shranjevanje, tiskanje in PDF-ji ostanejo nespremenjeni.
 	Show every bibliography field	Prikaži vsa polja bibliografije
 	Show First Line Only	Prikaži samo prvo vrstico
 	Show in the Styles gallery	Prikaži v galeriji slogov

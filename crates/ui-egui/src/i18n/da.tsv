@@ -821,8 +821,8 @@
 	Scroll ribbon left	Rul båndet til venstre
 	Scroll ribbon right	Rul båndet til højre
 	Apply Styles	Anvend stile
-	Dark page (white text on black)	Mørk side (hvid tekst på sort)
-	Show documents with their colours inverted, like View › Switch Modes. Saving, printing and PDFs are unchanged.	Vis dokumenter med omvendte farver, som Visning › Skift tilstand. Gem, udskrivning og PDF’er er uændrede.
+	Never change the document page color	Skift aldrig dokumentets sidefarve
+	Off, pages follow the theme: light in the light theme, dark in the dark theme. On, pages keep the document's own colour in every theme; only View › Switch Modes darkens them. Saving, printing and PDFs are unchanged.	Fra: Siderne følger temaet, lyse i det lyse tema og mørke i det mørke tema. Til: Siderne beholder dokumentets egen farve i alle temaer; kun Visning › Skift tilstand gør dem mørke. Gem, udskrivning og PDF’er er uændrede.
 	Only web (http, https) and email (mailto) links can be followed	Kun weblinks (http, https) og e-mail-links (mailto) kan følges
 	Character Border	Tegnramme
 	Direction:	Retning:

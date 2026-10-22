@@ -614,7 +614,7 @@
 	Danish	Daneză
 	Dark	Întunecată
 	Dark Mode	Mod întunecat
-	Dark page (white text on black)	Pagină întunecată (text alb pe negru)
+	Never change the document page color	Nu schimba niciodată culoarea paginii documentului
 	Dark with Shadow	Întunecat cu umbră
 	Darkroom	Cameră obscură
 	Dashed	Întreruptă
@@ -2114,7 +2114,7 @@
 	Show all revisions inline	Afișați toate revizuirile în text
 	Show changes at:	Afișați modificările la:
 	Show changes in:	Afișați modificările în:
-	Show documents with their colours inverted, like View › Switch Modes. Saving, printing and PDFs are unchanged.	Afișează documentele cu culorile inversate, ca Vizualizare › Schimbare mod. Salvarea, imprimarea și PDF-urile nu se schimbă.
+	Off, pages follow the theme: light in the light theme, dark in the dark theme. On, pages keep the document's own colour in every theme; only View › Switch Modes darkens them. Saving, printing and PDFs are unchanged.	Dezactivat: paginile urmează tema, deschise în tema deschisă și întunecate în tema întunecată. Activat: paginile păstrează culoarea proprie a documentului în orice temă; doar Vizualizare › Schimbare mod le întunecă. Salvarea, imprimarea și PDF-urile nu se schimbă.
 	Show every bibliography field	Afișați fiecare câmp din bibliografie
 	Show in the Styles gallery	Afișați în galeria de stiluri
 	Show its list number	Afișați numărul din listă

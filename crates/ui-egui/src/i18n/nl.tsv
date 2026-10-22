@@ -821,8 +821,8 @@
 	Scroll ribbon left	Lint naar links schuiven
 	Scroll ribbon right	Lint naar rechts schuiven
 	Apply Styles	Stijlen toepassen
-	Dark page (white text on black)	Donkere pagina (witte tekst op zwarte achtergrond)
-	Show documents with their colours inverted, like View › Switch Modes. Saving, printing and PDFs are unchanged.	Documenten met omgekeerde kleuren tonen, zoals Weergave › Modus wisselen. Opslaan, afdrukken en pdf’s blijven ongewijzigd.
+	Never change the document page color	De paginakleur van het document nooit wijzigen
+	Off, pages follow the theme: light in the light theme, dark in the dark theme. On, pages keep the document's own colour in every theme; only View › Switch Modes darkens them. Saving, printing and PDFs are unchanged.	Uit: de pagina’s volgen het thema, licht in het lichte thema en donker in het donkere thema. Aan: de pagina’s behouden in elk thema de eigen kleur van het document; alleen Weergave › Modus wisselen maakt ze donker. Opslaan, afdrukken en pdf’s blijven ongewijzigd.
 	Only web (http, https) and email (mailto) links can be followed	Alleen webkoppelingen (http, https) en e-mailkoppelingen (mailto) kunnen worden gevolgd
 	Character Border	Tekenrand
 	Direction:	Richting:
