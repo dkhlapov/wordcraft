@@ -1499,7 +1499,15 @@ mod tests {
             .unwrap()
             .insert_object(
                 0,
-                InlineObject::Field { instr: "TOC".into(), result: String::new(), locked: false, dirty: false, code: false, form: String::new(), code_xml: String::new() },
+                InlineObject::Field {
+                    instr: "TOC".into(),
+                    result: String::new(),
+                    locked: false,
+                    dirty: false,
+                    code: false,
+                    form: String::new(),
+                    code_xml: String::new(),
+                },
                 &CharProps::default(),
             )
             .unwrap();

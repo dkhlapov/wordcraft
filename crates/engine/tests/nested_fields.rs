@@ -74,14 +74,7 @@ fn update_field_keeps_a_nested_seq_and_styleref_result() {
     let mut paras = String::new();
     for name in ["SEQ Figure ", "STYLEREF 1 "] {
         let quote = format!("{}{}{}{}{}", fld("begin"), instr(r#" QUOTE "x" "#), fld("separate"), t("x"), fld("end"));
-        paras += &format!(
-            "<w:p>{}{}{quote}{}{}{}</w:p>",
-            fld("begin"),
-            instr(&format!(" {name}")),
-            fld("separate"),
-            t("old"),
-            fld("end"),
-        );
+        paras += &format!("<w:p>{}{}{quote}{}{}{}</w:p>", fld("begin"), instr(&format!(" {name}")), fld("separate"), t("old"), fld("end"),);
     }
     let doc = wordcraft_docx::read(&package(&paras)).unwrap();
     let mut s = Session::new(doc);
