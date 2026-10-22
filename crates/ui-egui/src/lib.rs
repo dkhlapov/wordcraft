@@ -1191,7 +1191,7 @@ impl WordApp {
         if !go {
             return Ok(json!({"done": false}));
         }
-        self.execute_user(&then, params).map(|r| json!({"done": true, "result": r}))
+        self.execute_held_back(&then, params).map(|r| json!({"done": true, "result": r}))
     }
 
     /// User commands can ask for a supported Save As target or an opening password (#55).
@@ -1222,11 +1222,20 @@ impl WordApp {
             self.dialog = Some(dialogs::Dialog::Password { name, params, password: Default::default(), message: String::new() });
             return Ok(json!({"pending": "password"}));
         }
-        // Whoever asked (a prompt that held the open back, a finished save), a failed open names
-        // the file and the cause, and Backstage gives way to the status bar that shows it (#1103).
+        // Whoever asked, a failed open names the file and the cause (#1103).
         if let (Err(e), Some(params)) = (&r, retry_path) {
             let path = params.get("path").and_then(Value::as_str).unwrap_or("");
             self.report_open_failure(path, e);
+        }
+        r
+    }
+
+    /// [`WordApp::execute_user`] for a command a prompt or a finished save held back. A failed
+    /// open also leaves Backstage, whose list isn't where that failure gets shown (#1103); a
+    /// direct open from Recent keeps File open and reports there instead (#2938).
+    pub(crate) fn execute_held_back(&mut self, id: &str, params: Value) -> Result<Value, String> {
+        let r = self.execute_user(id, params);
+        if r.is_err() && id == "file.open" {
             self.ui.backstage = false;
         }
         r
@@ -1321,7 +1330,7 @@ impl WordApp {
                 async_saves::SaveOutcome::Saved if !self.session.dirty && self.session.rev() == wait.rev && !self.save_unconfirmed() => {
                     // A failed open was already reported by name in `execute_user`.
                     let is_open = wait.then == "file.open";
-                    if let Err(e) = self.execute_user(&wait.then, wait.params)
+                    if let Err(e) = self.execute_held_back(&wait.then, wait.params)
                         && !is_open
                     {
                         self.status(e);
