@@ -1032,6 +1032,11 @@ impl WordApp {
                 if matches!(id, "file.save" | "file.saveAs") { self.session.password.as_ref().map(wordcraft_engine::Password::as_str) } else { None };
             let opts = wordcraft_engine::cmd::file::export_options(&self.session, &params);
             let bytes = wordcraft_engine::io::save_bytes_with(&name, &self.session.doc, password, &opts)?;
+            // What an RTF or ODT download leaves out, as file.save reports it (#1316).
+            let losses = name
+                .rsplit_once('.')
+                .filter(|(_, ext)| ext.eq_ignore_ascii_case("rtf") || ext.eq_ignore_ascii_case("odt"))
+                .map(|_| wordcraft_engine::losses::format_losses(&self.session.doc, &name));
             // A ticket left over from an earlier call isn't this save's.
             let saves = self.services.async_saves.clone();
             if let Some(saves) = &saves {
@@ -1056,9 +1061,13 @@ impl WordApp {
             if let Some(ticket) = saves.as_ref().and_then(async_saves::AsyncSaves::take_started) {
                 let document = self.session.document_id();
                 self.saves_in_flight.push(SaveInFlight { ticket, name: name.clone(), document, marked_saved });
-                return Ok(json!({"downloaded": name, "bytes": bytes.len(), "pendingSave": ticket}));
+                let mut r = json!({"downloaded": name, "bytes": bytes.len(), "pendingSave": ticket});
+                add_losses(&mut r, losses);
+                return Ok(r);
             }
-            return Ok(json!({"downloaded": name, "bytes": bytes.len()}));
+            let mut r = json!({"downloaded": name, "bytes": bytes.len()});
+            add_losses(&mut r, losses);
+            return Ok(r);
         }
         let document = self.session.document_id();
         let old_path = self.session.path.clone();
@@ -3024,6 +3033,13 @@ fn control_click_as_secondary(events: &mut [egui::Event], held: &mut bool) {
                 *held = false;
             }
         }
+    }
+}
+
+/// Put the ids of what a save left out into its result as `losses`.
+fn add_losses(result: &mut Value, losses: Option<Vec<wordcraft_engine::losses::Loss>>) {
+    if let (Some(losses), Some(o)) = (losses, result.as_object_mut()) {
+        o.insert("losses".into(), json!(losses.iter().map(|l| l.id()).collect::<Vec<_>>()));
     }
 }
 

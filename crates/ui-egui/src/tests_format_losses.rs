@@ -208,6 +208,22 @@ fn a_failed_continue_restores_the_save_changes_prompt() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// A browser download of an RTF or ODT file reports what it left out, like a save to a path.
+#[test]
+fn a_browser_download_lists_the_losses() {
+    for name in ["draft.rtf", "draft.odt"] {
+        let mut a = draft(true);
+        a.services.download = Some(Box::new(|_, _| Ok(())));
+        let r = a.execute("file.saveAs", json!({"path": name})).unwrap();
+        assert!(r.get("downloaded").is_some(), "{name}: {r}");
+        assert_eq!(r["losses"], json!(["comments"]), "{name}");
+    }
+    let mut a = draft(true);
+    a.services.download = Some(Box::new(|_, _| Ok(())));
+    let r = a.execute("file.saveAs", json!({"path": "draft.docx"})).unwrap();
+    assert!(r.get("losses").is_none(), "{r}");
+}
+
 /// AutoSave writes only files that keep everything: not an RTF that would lose a comment.
 #[test]
 fn autosave_skips_an_rtf_file_that_would_lose_something() {
