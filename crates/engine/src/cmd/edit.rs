@@ -236,7 +236,7 @@ fn cut(s: &mut Session, _: &Value) -> CmdResult {
     if whole.is_none()
         && let Some(range) = s.cell_range().cloned()
     {
-        super::table::clear_cells(s, &range)?;
+        super::table::clear_range_cells(s, &range)?;
         super::controls::restore_placeholder(s)?;
         return Ok(r);
     }

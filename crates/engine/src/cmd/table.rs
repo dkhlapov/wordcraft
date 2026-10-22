@@ -686,7 +686,7 @@ pub(super) fn selected_table(s: &Session) -> Option<Path> {
 
 /// Clear the text of the cells `range` selects, leaving the cells (Cut of rows or cells, #1744);
 /// tracked when Track Changes is on. The caret goes to the first cell.
-pub(super) fn clear_cells(s: &mut Session, range: &crate::CellRange) -> Result<(), CmdError> {
+pub(super) fn clear_range_cells(s: &mut Session, range: &crate::CellRange) -> Result<(), CmdError> {
     let Some(t) = s.doc.table(range.story, &range.table) else { return Ok(()) };
     // The cells Copy takes: columns widened over merged cells, as `Table::slice` does.
     let (lo, hi, any) = t.slice_bounds(range.rows, range.cols);
