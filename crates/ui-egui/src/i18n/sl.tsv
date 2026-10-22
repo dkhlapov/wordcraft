@@ -2763,3 +2763,14 @@ preview	Title	Naslov
 	{names} and {n} more	{names} and {n} more
 	{name} options	{name} options
 	{width} × {height} pixels	{width} × {height} pixels
+	API key:	Ključ API:
+	Check spelling and grammar with LanguageTool	Preveri črkovanje in slovnico z LanguageTool
+	Detect automatically	Samodejno zaznaj
+	Each paragraph's proofing language	Jezik preverjanja vsakega odstavka
+	Language:	Jezik:
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Preverjanje z LanguageTool potrebuje namizno aplikacijo; brskalniška različica še ne more pošiljati besedila strežniku za preverjanje.
+	Paragraphs checked: {count}	Preverjeni odstavki: {count}
+	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Besedilo vaših odstavkov pošlje spodnjemu strežniku LanguageTool. Ko je izklopljeno, se uporablja vgrajeni preverjalnik WordCraft in nič ne zapusti tega računalnika.
+	Server:	Strežnik:
+	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Uporabite lasten strežnik LanguageTool tako, da vnesete njegov naslov, na primer http://localhost:8081.
+	Username:	Uporabniško ime:
