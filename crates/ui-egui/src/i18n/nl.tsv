@@ -2669,3 +2669,19 @@ preview	Title	Titel
 	Full Screen View	Full Screen View
 	Personal Templates	Personal Templates
 	Underline Color	Underline Color
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Automatisch opslaan staat uit: {name} kan niet alles in dit document behouden. Sla op als .docx om automatisch opslaan in te schakelen.
+	Charts and SmartArt	Grafieken en SmartArt
+	Content controls	Inhoudsbeheer
+	Continue	Doorgaan
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Ga door met opslaan in deze indeling of sla een Word-document (.docx) op om alles te behouden.
+	Embedded objects (their pictures are kept)	Ingesloten objecten (hun afbeeldingen blijven behouden)
+	Equations (written as plain text)	Vergelijkingen (opgeslagen als gewone tekst)
+	Fields (their current text is kept)	Velden (hun huidige tekst blijft behouden)
+	Other content from the original file	Andere inhoud uit het oorspronkelijke bestand
+	Phonetic guides	Fonetische aanwijzingen
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Afbeeldingen die RTF niet kan bewaren (zoals EMF, WMF en SVG)
+	Save as Word Document	Opslaan als Word-document
+	Saving as {name} may lose some of this document's features:	Opslaan als {name} kan enkele functies van dit document verliezen:
+	Section breaks and columns	Sectie-einden en kolommen
+	Shapes, text boxes and drawings	Vormen, tekstvakken en tekeningen

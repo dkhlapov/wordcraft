@@ -2599,3 +2599,19 @@ preview	Title	Titel
 	Full Screen View	Full Screen View
 	Personal Templates	Personal Templates
 	Underline Color	Underline Color
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Autogem er slået fra: {name} kan ikke beholde alt i dette dokument. Gem som .docx for at slå autogem til.
+	Charts and SmartArt	Diagrammer og SmartArt
+	Content controls	Indholdskontrolelementer
+	Continue	Fortsæt
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Fortsæt med at gemme i dette format, eller gem et Word-dokument (.docx) for at beholde alt.
+	Embedded objects (their pictures are kept)	Indlejrede objekter (deres billeder bevares)
+	Equations (written as plain text)	Ligninger (skrives som almindelig tekst)
+	Fields (their current text is kept)	Felter (deres aktuelle tekst bevares)
+	Other content from the original file	Andet indhold fra den oprindelige fil
+	Phonetic guides	Fonetiske vejledninger
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Billeder, som RTF ikke kan beholde (f.eks. EMF, WMF og SVG)
+	Save as Word Document	Gem som Word-dokument
+	Saving as {name} may lose some of this document's features:	Hvis du gemmer som {name}, kan nogle af dokumentets funktioner gå tabt:
+	Section breaks and columns	Sektionsskift og kolonner
+	Shapes, text boxes and drawings	Figurer, tekstfelter og tegninger
