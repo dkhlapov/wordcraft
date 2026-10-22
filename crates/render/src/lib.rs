@@ -216,8 +216,8 @@ fn svg_for(doc: &Document, key: &str) -> Option<Option<Arc<wordcraft_svg::Svg>>>
             None
         }
     };
-    // The parsed tree is a few times the size of its source text.
-    lock(svgs()).insert(key, bytes, v.clone(), bytes.len().saturating_mul(4));
+    // The parsed tree is a few times the size of its source text; a parse that failed holds nothing.
+    lock(svgs()).insert(key, bytes, v.clone(), v.as_ref().map_or(0, |_| bytes.len().saturating_mul(4)));
     Some(v)
 }
 
