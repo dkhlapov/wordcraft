@@ -2766,8 +2766,8 @@ template	Letter	Scrisoare
 	Check spelling and grammar with LanguageTool	Verifică ortografia și gramatica cu LanguageTool
 	Detect automatically	Detectează automat
 	Each paragraph's proofing language	Limba de verificare a fiecărui paragraf
-	Language:	Limbă:
-	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Verificarea cu LanguageTool necesită aplicația desktop; versiunea din browser nu poate trimite încă text către un server de verificare.
+	Language:	Limba:
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Verificarea cu LanguageTool necesită aplicația desktop; versiunea din browser nu poate încă trimite text către un server de verificare.
 	Paragraphs checked: {count}	Paragrafe verificate: {count}
 	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Trimite textul paragrafelor tale către serverul LanguageTool de mai jos. Dezactivat, se folosește verificatorul încorporat WordCraft și nimic nu părăsește acest computer.
 	Server:	Server:

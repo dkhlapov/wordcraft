@@ -2907,6 +2907,7 @@ pub(crate) fn works_without_document(id: &str) -> bool {
             | "readAloud.skipCitations"
             | "tools.customizeKeyboard"
             | "tools.customizeRibbon"
+            | "ui.languageTool"
             | "view.darkMode"
             | "view.marks"
             | "view.ruler"

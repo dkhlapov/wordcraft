@@ -2768,14 +2768,14 @@ preview	Title	Naslov
 	Detect automatically	Samodejno zaznaj
 	Each paragraph's proofing language	Jezik preverjanja za vsak odstavek
 	Language:	Jezik:
-	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Preverjanje z LanguageTool potrebuje namizno aplikacijo; brskalniška različica še ne more pošiljati besedila strežniku za preverjanje.
-	Paragraphs checked: {count}	Preverjeni odstavki: {count}
-	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Pošlje besedilo vaših odstavkov spodnjemu strežniku LanguageTool. Če je izklopljeno, se uporablja vgrajeno preverjanje WordCraft in nič ne zapusti tega računalnika.
-	Server:	Strežnik:
-	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Uporabite svoj strežnik LanguageTool z vnosom njegovega naslova, na primer http://localhost:8081.
-	Username:	Uporabniško ime:
 	This system has no credential store, so the API key is saved in WordCraft's settings file.	Ta sistem nima shrambe poverilnic, zato je ključ API shranjen v datoteki z nastavitvami WordCraft.
 	The system's credential store could not keep the API key ({error}), so it is saved in WordCraft's settings file.	Sistemska shramba poverilnic ni mogla obdržati ključa API ({error}), zato je shranjen v datoteki z nastavitvami WordCraft.
 	The API key is kept in the system's credential store.	Ključ API je shranjen v sistemski shrambi poverilnic.
 	The system's credential store no longer has the API key. Enter it again to keep checking with LanguageTool.	Sistemska shramba poverilnic nima več ključa API. Vnesite ga znova, da boste lahko še naprej preverjali z LanguageTool.
 	The old API key is still in the system's credential store: it could not be removed ({error}).	Stari ključ API je še vedno v sistemski shrambi poverilnic: ni ga bilo mogoče odstraniti ({error}).
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Preverjanje z LanguageTool zahteva namizno aplikacijo; brskalniška različica še ne more pošiljati besedila strežniku za preverjanje.
+	Paragraphs checked: {count}	Preverjeni odstavki: {count}
+	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Pošlje besedilo vaših odstavkov strežniku LanguageTool spodaj. Če je izklopljeno, se uporablja vgrajeno preverjanje WordCraft in nič ne zapusti tega računalnika.
+	Server:	Strežnik:
+	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Uporabite svoj strežnik LanguageTool tako, da vnesete njegov naslov, na primer http://localhost:8081.
+	Username:	Uporabniško ime:
