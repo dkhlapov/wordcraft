@@ -2802,3 +2802,19 @@ template	Letter	Brev
 	More tabs	Fler flikar
 # #3013: Insert Table of Figures
 	Include label and number	Ta med etikett och nummer
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Autospara är av: {name} kan inte behålla allt i det här dokumentet. Spara som .docx för att slå på autospara.
+	Charts and SmartArt	Diagram och SmartArt
+	Content controls	Innehållskontroller
+	Continue	Fortsätt
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Fortsätt att spara i det här formatet eller spara ett Word-dokument (.docx) för att behålla allt.
+	Embedded objects (their pictures are kept)	Inbäddade objekt (deras bilder behålls)
+	Equations (written as plain text)	Ekvationer (skrivs som vanlig text)
+	Fields (their current text is kept)	Fält (deras aktuella text behålls)
+	Other content from the original file	Annat innehåll från originalfilen
+	Phonetic guides	Fonetiska guider
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Bilder som RTF inte kan behålla (som EMF, WMF och SVG)
+	Save as Word Document	Spara som Word-dokument
+	Saving as {name} may lose some of this document's features:	Om du sparar som {name} kan vissa av dokumentets funktioner gå förlorade:
+	Section breaks and columns	Avsnittsbrytningar och kolumner
+	Shapes, text boxes and drawings	Former, textrutor och ritningar

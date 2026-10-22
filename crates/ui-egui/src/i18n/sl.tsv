@@ -2763,3 +2763,19 @@ preview	Title	Naslov
 	{names} and {n} more	{names} and {n} more
 	{name} options	{name} options
 	{width} × {height} pixels	{width} × {height} pixels
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Samodejno shranjevanje je izklopljeno: {name} ne more ohraniti vsega v tem dokumentu. Shranite kot .docx, da vklopite samodejno shranjevanje.
+	Charts and SmartArt	Grafikoni in SmartArt
+	Content controls	Kontrolniki vsebine
+	Continue	Nadaljuj
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Nadaljujte s shranjevanjem v tej obliki ali shranite dokument Word (.docx), da ohranite vse.
+	Embedded objects (their pictures are kept)	Vdelani predmeti (njihove slike ostanejo)
+	Equations (written as plain text)	Enačbe (zapisane kot navadno besedilo)
+	Fields (their current text is kept)	Polja (njihovo trenutno besedilo ostane)
+	Other content from the original file	Druga vsebina iz izvirne datoteke
+	Phonetic guides	Fonetični vodniki
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Slike, ki jih RTF ne more ohraniti (kot so EMF, WMF in SVG)
+	Save as Word Document	Shrani kot dokument Word
+	Saving as {name} may lose some of this document's features:	Pri shranjevanju kot {name} se lahko izgubijo nekatere funkcije tega dokumenta:
+	Section breaks and columns	Prelomi odsekov in stolpci
+	Shapes, text boxes and drawings	Oblike, besedilna polja in risbe

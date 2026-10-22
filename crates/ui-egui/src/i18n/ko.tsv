@@ -2617,3 +2617,19 @@ preview	Title	제목
 	More tabs	탭 더 보기
 # #3013: Insert Table of Figures
 	Include label and number	레이블 및 번호 포함
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	자동 저장이 꺼져 있습니다: {name}은(는) 이 문서의 모든 내용을 유지할 수 없습니다. 자동 저장을 켜려면 .docx로 저장하세요.
+	Charts and SmartArt	차트 및 SmartArt
+	Content controls	콘텐츠 컨트롤
+	Continue	계속
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	이 형식으로 계속 저장하거나, Word 문서(.docx)로 저장하여 모든 내용을 유지하세요.
+	Embedded objects (their pictures are kept)	포함된 개체(그림은 유지됩니다)
+	Equations (written as plain text)	수식(일반 텍스트로 저장됩니다)
+	Fields (their current text is kept)	필드(현재 텍스트는 유지됩니다)
+	Other content from the original file	원본 파일의 기타 내용
+	Phonetic guides	루비 문자
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	RTF가 유지할 수 없는 그림(EMF, WMF, SVG 등)
+	Save as Word Document	Word 문서로 저장
+	Saving as {name} may lose some of this document's features:	{name}(으)로 저장하면 이 문서의 일부 기능이 사라질 수 있습니다:
+	Section breaks and columns	구역 나누기 및 단
+	Shapes, text boxes and drawings	도형, 텍스트 상자 및 그리기

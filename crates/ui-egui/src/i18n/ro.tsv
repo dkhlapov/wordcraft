@@ -2762,3 +2762,19 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Salvarea automată este dezactivată: {name} nu poate păstra tot conținutul acestui document. Salvați ca .docx pentru a activa salvarea automată.
+	Charts and SmartArt	Diagrame și SmartArt
+	Content controls	Controale de conținut
+	Continue	Continuă
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Continuați să salvați în acest format sau salvați un document Word (.docx) pentru a păstra tot.
+	Embedded objects (their pictures are kept)	Obiecte încorporate (imaginile lor se păstrează)
+	Equations (written as plain text)	Ecuații (scrise ca text simplu)
+	Fields (their current text is kept)	Câmpuri (textul lor curent se păstrează)
+	Other content from the original file	Alt conținut din fișierul original
+	Phonetic guides	Ghiduri fonetice
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Imagini pe care RTF nu le poate păstra (precum EMF, WMF și SVG)
+	Save as Word Document	Salvează ca document Word
+	Saving as {name} may lose some of this document's features:	Salvarea ca {name} poate pierde unele funcții ale acestui document:
+	Section breaks and columns	Întreruperi de secțiune și coloane
+	Shapes, text boxes and drawings	Forme, casete de text și desene

@@ -2814,3 +2814,19 @@ template	Letter	Thư
 	More tabs	Các tab khác
 # #3013: Insert Table of Figures
 	Include label and number	Bao gồm nhãn và số
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Tự động lưu đang tắt: {name} không thể giữ mọi thứ trong tài liệu này. Hãy lưu dưới dạng .docx để bật tự động lưu.
+	Charts and SmartArt	Biểu đồ và SmartArt
+	Content controls	Điều khiển nội dung
+	Continue	Tiếp tục
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Tiếp tục lưu ở định dạng này, hoặc lưu thành tài liệu Word (.docx) để giữ mọi thứ.
+	Embedded objects (their pictures are kept)	Đối tượng nhúng (hình của chúng được giữ lại)
+	Equations (written as plain text)	Phương trình (được ghi dưới dạng văn bản thuần)
+	Fields (their current text is kept)	Trường (văn bản hiện tại của chúng được giữ lại)
+	Other content from the original file	Nội dung khác từ tệp gốc
+	Phonetic guides	Chú thích phiên âm
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Hình ảnh mà RTF không thể giữ (như EMF, WMF và SVG)
+	Save as Word Document	Lưu thành tài liệu Word
+	Saving as {name} may lose some of this document's features:	Lưu dưới dạng {name} có thể làm mất một số tính năng của tài liệu này:
+	Section breaks and columns	Ngắt phần và cột
+	Shapes, text boxes and drawings	Hình dạng, hộp văn bản và bản vẽ

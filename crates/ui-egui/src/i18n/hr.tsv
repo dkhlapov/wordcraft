@@ -2774,3 +2774,19 @@ preview	Title	Naslov
 	More tabs	Više kartica
 # #3013: Insert Table of Figures
 	Include label and number	Uključi oznaku i broj
+# #1316: save warning for RTF and ODT
+	AutoSave is off: {name} can't keep everything in this document. Save as .docx to turn on AutoSave.	Automatsko spremanje je isključeno: {name} ne može zadržati sve u ovom dokumentu. Spremite kao .docx da biste uključili automatsko spremanje.
+	Charts and SmartArt	Grafikoni i SmartArt
+	Content controls	Kontrole sadržaja
+	Continue	Nastavi
+	Continue to save in this format, or save a Word document (.docx) to keep everything.	Nastavite spremati u ovom formatu ili spremite Wordov dokument (.docx) da zadržite sve.
+	Embedded objects (their pictures are kept)	Ugrađeni objekti (njihove slike ostaju)
+	Equations (written as plain text)	Jednadžbe (zapisane kao običan tekst)
+	Fields (their current text is kept)	Polja (zadržava se njihov trenutni tekst)
+	Other content from the original file	Drugi sadržaj iz izvorne datoteke
+	Phonetic guides	Fonetski vodiči
+	Pictures RTF can't hold (such as EMF, WMF and SVG)	Slike koje RTF ne može zadržati (npr. EMF, WMF i SVG)
+	Save as Word Document	Spremi kao Word dokument
+	Saving as {name} may lose some of this document's features:	Spremanjem kao {name} neke značajke ovog dokumenta mogu se izgubiti:
+	Section breaks and columns	Prijelomi odjeljaka i stupci
+	Shapes, text boxes and drawings	Oblici, tekstni okviri i crteži
