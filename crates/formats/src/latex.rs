@@ -2539,7 +2539,7 @@ fn raw_text(toks: &[Tok]) -> String {
     for t in toks {
         match t {
             Tok::Text(x) => s.push_str(x),
-            Tok::Tie => s.push(' '),
+            Tok::Tie => s.push('~'),
             Tok::Cmd(c) => match text_symbol(c) {
                 Some(sym) => s.push_str(sym),
                 None if c == "\\" => s.push(' '),
@@ -3103,5 +3103,23 @@ Caf\'e na\"ive \c{c}a \v{s}\'{e} and {\bfseries grouped bold} after.
         let err = import(&big).unwrap_err();
         assert!(err.contains("32 MiB"), "{err}");
         assert!(crate::import("tex", &big).is_some_and(|r| r.is_err()));
+    }
+
+    #[test]
+    fn urls_preserve_tildes() {
+        let tex = r"\href{https://example.com/~user/page}{Homepage} and \url{https://example.com/~user/page}";
+        let flow = parse(tex);
+        let FBlock::Para(p) = &flow.blocks[0] else { panic!() };
+        assert_eq!(
+            p.inlines[0],
+            Inline::Text("Homepage".to_string(), Fmt { link: Some("https://example.com/~user/page".to_string()), ..Default::default() })
+        );
+        assert_eq!(
+            p.inlines[2],
+            Inline::Text(
+                "https://example.com/~user/page".to_string(),
+                Fmt { link: Some("https://example.com/~user/page".to_string()), ..Default::default() }
+            )
+        );
     }
 }
