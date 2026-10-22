@@ -1,6 +1,7 @@
 //! SVG pictures (#1910) draw at device resolution: sharp at any zoom.
 
 use super::*;
+use wordcraft_layout::display::page_display;
 use wordcraft_layout::{LayoutCache, LayoutOptions, layout};
 
 /// A 10 × 10 px SVG: red left half, white right half.

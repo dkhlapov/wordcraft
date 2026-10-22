@@ -1092,7 +1092,10 @@ pub fn original_size(s: &Session, media: &str) -> Option<OriginalSize> {
     if let Some((pw, ph)) = wordcraft_render::image_size(bytes) {
         return Some(OriginalSize { w: pw as f32 * 0.75, h: ph as f32 * 0.75, pixels: Some((pw, ph)) });
     }
-    let (w, h, _) = wordcraft_render::metafile_size(bytes)?;
+    if let Some((w, h, _)) = wordcraft_render::metafile_size(bytes) {
+        return Some(OriginalSize { w, h, pixels: None });
+    }
+    let (w, h) = wordcraft_svg::natural_size(bytes)?;
     Some(OriginalSize { w, h, pixels: None })
 }
 
