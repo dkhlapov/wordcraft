@@ -559,6 +559,7 @@ fn a_roman_page_number_in_the_footer_stays_roman_with_the_page_count_in_the_body
         dirty: false,
         code: false,
         form: String::new(),
+        code_xml: String::new(),
     };
     let mut d = Document::new();
     let mut fp = Paragraph::new();

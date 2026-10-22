@@ -746,6 +746,7 @@ fn legacy_form_fields_are_drawn() {
         dirty: false,
         code: false,
         form: form.into(),
+        code_xml: String::new(),
     };
     let check_box = |state: &str| format!(r#"<w:ffData><w:name w:val="Box"/><w:checkBox><w:sizeAuto/>{state}</w:checkBox></w:ffData>"#);
     let draws_of = |o: InlineObject| {
@@ -789,8 +790,7 @@ fn legacy_form_fields_are_drawn() {
         locked: false,
         dirty: false,
         code: false,
-        form: r#"<w:ffData><w:name w:val="List"/><w:ddList><w:result w:val="1"/><w:listEntry w:val="Alpha"/><w:listEntry w:val="Beta"/></w:ddList></w:ffData>"#.into(),
-    };
+        form: r#"<w:ffData><w:name w:val="List"/><w:ddList><w:result w:val="1"/><w:listEntry w:val="Alpha"/><w:listEntry w:val="Beta"/></w:ddList></w:ffData>"#.into(), code_xml: String::new() };
     let (items, _) = draws_of(dd);
     let text: String = items.iter().filter_map(|i| if let display::Draw::Glyphs { text, .. } = i { Some(text.as_str()) } else { None }).collect();
     assert!(text.contains("Beta") && !text.contains("Alpha"), "{text}");
@@ -7099,6 +7099,7 @@ fn shared_section_page_totals() {
             dirty: true,
             code: false,
             form: String::new(),
+            code_xml: String::new(),
         };
         let mut footer = Paragraph::new();
         for instr in ["PAGE", "SECTIONPAGES"] {
@@ -10693,7 +10694,15 @@ fn layout_cache_invalidates_on_changed_filename() {
     let mut p = Paragraph::new();
     p.insert_object(
         0,
-        InlineObject::Field { instr: "FILENAME".into(), result: String::new(), locked: false, dirty: false, code: false, form: String::new() },
+        InlineObject::Field {
+            instr: "FILENAME".into(),
+            result: String::new(),
+            locked: false,
+            dirty: false,
+            code: false,
+            form: String::new(),
+            code_xml: String::new(),
+        },
         &Default::default(),
     )
     .unwrap();
@@ -10725,7 +10734,15 @@ fn layout_cache_invalidates_on_changed_filepath() {
     let mut p = Paragraph::new();
     p.insert_object(
         0,
-        InlineObject::Field { instr: r"FILENAME \p".into(), result: String::new(), locked: false, dirty: false, code: false, form: String::new() },
+        InlineObject::Field {
+            instr: r"FILENAME \p".into(),
+            result: String::new(),
+            locked: false,
+            dirty: false,
+            code: false,
+            form: String::new(),
+            code_xml: String::new(),
+        },
         &Default::default(),
     )
     .unwrap();
