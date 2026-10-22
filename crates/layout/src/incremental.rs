@@ -220,6 +220,8 @@ pub(crate) struct Pass {
     pub end_behind: Vec<usize>,
     /// Whether its body shows page totals (`NUMPAGES`, `SECTIONPAGES`): a later pass can't resume.
     pub uses_totals: bool,
+    /// The word being typed in this pass: its paragraph is laid out again when it moves.
+    pub typing: Option<crate::TypingWord>,
 }
 
 /// Everything outside the body blocks a pass depends on.
@@ -265,9 +267,10 @@ pub(crate) struct Plan {
 }
 
 impl Pass {
-    pub fn new(key: PassKey, doc: &Document, sections: &[(usize, &SectionProps)]) -> Pass {
+    pub fn new(key: PassKey, typing: Option<crate::TypingWord>, doc: &Document, sections: &[(usize, &SectionProps)]) -> Pass {
         Pass {
             key,
+            typing,
             body: doc.body.to_vec(),
             sections: sections.iter().map(|(e, s)| (*e, (*s).clone())).collect(),
             checkpoints: Vec::new(),
@@ -279,12 +282,22 @@ impl Pass {
     }
 
     /// How to lay out `doc` reusing this pass, or `None` for a full layout.
-    pub fn plan(&self, key: &PassKey, doc: &Document, sections: &[(usize, &SectionProps)]) -> Option<Plan> {
+    pub fn plan(&self, key: &PassKey, typing: Option<crate::TypingWord>, doc: &Document, sections: &[(usize, &SectionProps)]) -> Option<Plan> {
         if *key != self.key || key.opts.0 != ViewMode::Print {
             return None;
         }
         let same = |a: &Arc<Block>, b: &Arc<Block>| Arc::ptr_eq(a, b);
-        let first_diff = self.body.iter().zip(doc.body.iter()).position(|(a, b)| !same(a, b)).unwrap_or(self.body.len().min(doc.body.len()));
+        let mut first_diff = self.body.iter().zip(doc.body.iter()).position(|(a, b)| !same(a, b)).unwrap_or(self.body.len().min(doc.body.len()));
+        // The squiggle-free word moved: the paragraphs it was in and is in now are placed again.
+        let mut typed_end = 0;
+        if self.typing != typing {
+            let has = |b: &Arc<Block>, t: Option<crate::TypingWord>| t.is_some_and(|t| b.as_para().is_some_and(|p| p.rev == t.rev));
+            let moved = |body: &[Arc<Block>], t| body.iter().position(|b| has(b, t));
+            for i in [moved(&self.body, self.typing), moved(&doc.body, typing)].into_iter().flatten() {
+                first_diff = first_diff.min(i);
+                typed_end = typed_end.max(i + 1);
+            }
+        }
         // The last checkpoint strictly before the first changed block (the block before it may
         // keep with it, so it is placed again), whose section still has the same settings.
         let sect_same = |i: usize, si: usize| match (sections.get(i), self.sections.get(i)) {
@@ -304,7 +317,7 @@ impl Pass {
         let converge_after = (doc.body.len() == self.body.len() && all_sections).then(|| {
             // The first block of the unchanged tail.
             let tail = self.body.iter().rev().zip(doc.body.iter().rev()).take_while(|(a, b)| same(a, b)).count();
-            doc.body.len() - tail
+            (doc.body.len() - tail).max(typed_end)
         });
         Some(Plan { from: cp.cloned(), pages, converge_after })
     }
