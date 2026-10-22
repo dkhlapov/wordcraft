@@ -1609,6 +1609,10 @@ mod tests {
         let yellow = wordcraft_doc::props::Highlight::Yellow.rgb().map(crate::theme::c32);
         assert_eq!(crate::ribbon::highlight_swatch("yellow"), yellow);
         assert_eq!(crate::ribbon::highlight_swatch("none"), None);
+        // No Color: a transparent swatch survives, so the icon draws no bar.
+        assert_eq!(crate::ribbon::highlight_bar("none"), Some(Color32::TRANSPARENT));
+        assert_eq!(split_colors(true, crate::ribbon::highlight_bar("none"), &t), (t.icon, Color32::TRANSPARENT));
+        assert_eq!(crate::ribbon::highlight_bar("yellow"), yellow);
         assert_eq!(crate::ribbon::shading_swatch("FF0000"), Some(Color32::from_rgb(255, 0, 0)));
         assert_eq!(crate::ribbon::shading_swatch("not a colour"), None);
     }

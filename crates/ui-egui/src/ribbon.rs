@@ -1053,6 +1053,12 @@ pub(crate) fn highlight_swatch(name: &str) -> Option<egui::Color32> {
     wordcraft_doc::props::Highlight::ALL.iter().find(|h| h.ooxml() == name).and_then(|h| h.rgb()).map(crate::theme::c32)
 }
 
+/// What the Text Highlight Color split button passes as its swatch: the last colour, or a fully
+/// transparent one for "none" so no bar claims a colour the command will not apply.
+pub(crate) fn highlight_bar(name: &str) -> Option<egui::Color32> {
+    if name == "none" { Some(egui::Color32::TRANSPARENT) } else { highlight_swatch(name) }
+}
+
 /// The Shading button's bar: the last shading used (hex), if it parses.
 pub(crate) fn shading_swatch(hex: &str) -> Option<egui::Color32> {
     wordcraft_doc::Rgb::parse(hex).map(crate::theme::c32)
@@ -1144,7 +1150,7 @@ fn home(app: &mut WordApp, ui: &mut Ui) {
                     mi(ui, app, "Double Strikethrough", "format.doubleStrikethrough", json!({}));
                 });
                 let hl = app.canvas.last_highlight.clone();
-                let hl_sw = highlight_swatch(&hl);
+                let hl_sw = highlight_bar(&hl);
                 split(
                     ui,
                     app,

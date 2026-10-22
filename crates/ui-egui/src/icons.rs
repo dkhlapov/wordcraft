@@ -509,15 +509,16 @@ impl Pen<'_> {
 /// come from the theme unless the icon is disabled (`c == accent`). Callers that know their state
 /// (a colour swatch may equal the line colour while enabled) use [`paint_state`].
 pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
-    paint_state(p, r, name, c, accent, c == accent || accent.a() == 0);
+    let disabled = c == accent || accent.a() == 0;
+    paint_state(p, r, name, c, if accent.a() == 0 { c } else { accent }, disabled);
 }
 
-/// [`paint`] with the disabled state given, not guessed from the colours.
+/// [`paint`] with the disabled state given, not guessed from the colours. A fully transparent
+/// accent is kept as is: the colour buttons then draw no colour bar (Highlight set to No Color).
 pub fn paint_state(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32, disabled: bool) {
     let side = r.width().min(r.height());
     let s = side / 16.0;
-    let disabled = disabled || accent.a() == 0;
-    let a = if accent.a() == 0 { c } else { accent };
+    let a = accent;
     let tokens = crate::theme::Tokens::get(p.ctx());
     let tint = if disabled { Color32::TRANSPARENT } else { a.gamma_multiply(if tokens.dark { 0.28 } else { 0.16 }) };
     let pen = Pen { p, o: r.center() - vec2(8.0 * s, 8.0 * s), s, w: stroke_px(side), c, a, t: tint };
@@ -2336,6 +2337,9 @@ fn brackets(pen: &Pen, y0: f32, y1: f32) {
 /// The colour bar under the colour commands, in the colour that will be applied. A very light
 /// colour gets an ink outline so it stays visible on light grounds.
 fn color_bar(pen: &Pen, col: Color32) {
+    if col.a() == 0 {
+        return;
+    }
     pen.block(1.5, 12.5, 14.5, 15.0, 0.75, col);
     let [r, g, b, _] = col.to_srgba_unmultiplied();
     let light = 0.2126 * f32::from(r) + 0.7152 * f32::from(g) + 0.0722 * f32::from(b) > 215.0;
