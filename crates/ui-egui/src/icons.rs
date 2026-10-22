@@ -8,7 +8,7 @@
 //! - A 16 × 16 unit grid, drawn at 16 px (small buttons, menus, toolbars) or 32 px (large ribbon
 //!   buttons); the one exception is `dropdown`, also drawn at `widgets::DROPDOWN` (10 px) beside
 //!   labels, combos and split buttons. Don't paint at other sizes.
-//! - Stroke width comes from [`stroke_px`] (about 1.25 px at 16, 2 px at 32); never set a width
+//! - Stroke width comes from [`stroke_px`] (about 1.1 px at 16, 1.75 px at 32); never set a width
 //!   by hand. Bold lettering uses `Pen::heavy`.
 //! - Every corner is rounded with `CORNER` (lines, outlines and fills alike); arrow heads, checks
 //!   and letter apexes use `TIP`. Hand-drawn strokes and rope use `Pen::curve`, not polylines.
@@ -66,9 +66,9 @@
 
 use egui::{Color32, CornerRadius, FontId, Painter, Pos2, Rect, Shape, Stroke, pos2, vec2};
 
-/// Stroke width in pixels for an icon drawn `side` pixels wide: about 1.25 px at 16, 2 px at 32.
+/// Stroke width in pixels for an icon drawn `side` pixels wide: about 1.1 px at 16, 1.75 px at 32.
 pub fn stroke_px(side: f32) -> f32 {
-    (0.5 + side * 0.047).clamp(1.1, 2.4)
+    (0.4 + side * 0.042).clamp(1.0, 2.2)
 }
 
 /// Corner radius, in grid units, for every vertex of a line, outline or filled shape: the same
