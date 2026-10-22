@@ -111,7 +111,12 @@ fn configure(app: &mut WordApp, p: &Value) -> Result<Value, String> {
         s.enabled = v.as_bool().ok_or("`enabled` must be true or false")?;
     }
     if let Some(server) = text("server")? {
-        s.server = if server.is_empty() { wordcraft_languagetool::DEFAULT_SERVER.into() } else { server };
+        let server = if server.is_empty() { wordcraft_languagetool::DEFAULT_SERVER.into() } else { server };
+        // A key belongs to the server it was entered for; a new address must not inherit it.
+        if server != s.server {
+            s.api_key.clear();
+        }
+        s.server = server;
     }
     if let Some(u) = text("username")? {
         s.username = u;
@@ -478,5 +483,10 @@ mod tests {
         // `ui.inspect`-style dumps never carry the key.
         app.run("ui.languageTool", json!({"apiKey": "SECRET"})).unwrap();
         assert!(!format!("{:?}", app.prefs()).contains("SECRET"));
+        // A new server address drops the key typed for the old one; a key sent along is kept.
+        app.run("ui.languageTool", json!({"server": "http://localhost:9090"})).unwrap();
+        assert_eq!(app.run("ui.languageTool", json!({})).unwrap()["apiKeySet"], false);
+        app.run("ui.languageTool", json!({"server": "http://localhost:9091", "apiKey": "NEW"})).unwrap();
+        assert_eq!(app.run("ui.languageTool", json!({})).unwrap()["apiKeySet"], true);
     }
 }
