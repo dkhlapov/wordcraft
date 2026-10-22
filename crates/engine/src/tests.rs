@@ -8274,6 +8274,7 @@ fn toc_keeps_direct_number_tabs() {
                 dirty: true,
                 code: false,
                 form: String::new(),
+                code_xml: String::new(),
             },
             &CharProps::default(),
         )
