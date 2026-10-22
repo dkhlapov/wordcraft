@@ -77,10 +77,7 @@ impl<'de> Deserialize<'de> for Settings {
 
 /// Is `code` shaped like a language code (`en`, `en-US`, `de-DE-x-simple-language`)?
 pub fn is_language_code(code: &str) -> bool {
-    (2..=35).contains(&code.len())
-        && code.starts_with(|c: char| c.is_ascii_alphabetic())
-        && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
-        && !code.ends_with('-')
+    wordcraft_proof::external::is_language_code(code)
 }
 
 impl Settings {
@@ -98,6 +95,10 @@ impl Settings {
             None => return Err(LtError::BadServer(clip(server))),
         };
         if rest.starts_with(['/', '?', '#']) || rest.is_empty() || server.contains(['?', '#']) {
+            return Err(LtError::BadServer(clip(server)));
+        }
+        // Credentials go in the request body: never over plain http to another machine.
+        if lower.starts_with("http://") && self.has_account() && !is_loopback_authority(rest) {
             return Err(LtError::BadServer(clip(server)));
         }
         let mut base = server.trim_end_matches('/');
@@ -120,13 +121,7 @@ impl Settings {
 
     /// The language to ask for a paragraph whose proofing language is `para_lang`.
     pub fn language_for(&self, para_lang: Option<&str>) -> String {
-        let chosen = self.language.trim();
-        let code = match chosen {
-            "" | "auto" => None,
-            "document" => para_lang.map(str::trim),
-            c => Some(c),
-        };
-        code.filter(|c| is_language_code(c)).map(str::to_string).unwrap_or_else(|| crate::request::AUTO.to_string())
+        wordcraft_proof::external::language_for(&self.language, para_lang)
     }
 
     /// Whether a username and API key are both set (a premium account).
@@ -142,4 +137,23 @@ fn clip(s: &str) -> String {
         out.push('…');
     }
     out
+}
+
+/// Is the authority at the start of `rest` (`host[:port][/path]`) this machine? No user-info
+/// (`127.0.0.1@elsewhere` is `elsewhere`), and an address only when it parses as loopback.
+fn is_loopback_authority(rest: &str) -> bool {
+    let authority = rest.split('/').next().unwrap_or("");
+    if authority.contains('@') {
+        return false;
+    }
+    let host = if let Some(v6) = authority.strip_prefix('[') {
+        let Some((addr, tail)) = v6.split_once(']') else { return false };
+        if !(tail.is_empty() || tail.starts_with(':')) {
+            return false;
+        }
+        return addr.parse::<std::net::Ipv6Addr>().is_ok_and(|a| a.is_loopback());
+    } else {
+        authority.split(':').next().unwrap_or("")
+    };
+    host == "localhost" || host.ends_with(".localhost") || host.parse::<std::net::Ipv4Addr>().is_ok_and(|a| a.is_loopback())
 }

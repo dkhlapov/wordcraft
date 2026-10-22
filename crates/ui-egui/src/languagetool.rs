@@ -45,6 +45,9 @@ pub struct LtLink {
     paused_until: f64,
     /// Checking stopped until the settings change (rejected key, bad address).
     stopped: Option<String>,
+    /// (language, text) already sent at the current revision: one pass per revision, however
+    /// many results the store keeps.
+    sent: HashSet<(String, String)>,
     /// Texts not to send again.
     skipped: HashSet<(String, String)>,
     /// Paragraphs checked since the settings last changed.
@@ -66,9 +69,22 @@ impl LtLink {
         self.paused_until = 0.0;
         self.stopped = None;
         self.skipped.clear();
+        self.sent.clear();
         self.checked = 0;
         self.last_error = None;
     }
+}
+
+/// Metadata for `ui.languageTool`, listed by `engine.commands` beside the registry's commands.
+pub fn commands() -> Vec<Value> {
+    vec![json!({
+        "id": "ui.languageTool",
+        "label": "LanguageTool checking",
+        "location": "File › Options › Proofing",
+        "shortcut": null,
+        "params": "enabled?: bool; server?: http(s) address (empty: the public server; plain http with an account only for this computer); username?: string; apiKey?: string; language?: auto|document|code such as en-US. No params reads the settings (the key is never returned). Off by default: when on, paragraph text goes to the server.",
+        "enabled": true,
+    })]
 }
 
 /// Handle `ui.languageTool`. `None` when `id` isn't it.
@@ -96,7 +112,6 @@ fn configure(app: &mut WordApp, p: &Value) -> Result<Value, String> {
     }
     if let Some(server) = text("server")? {
         s.server = if server.is_empty() { wordcraft_languagetool::DEFAULT_SERVER.into() } else { server };
-        s.endpoint().map_err(|e| e.to_string())?;
     }
     if let Some(u) = text("username")? {
         s.username = u;
@@ -110,6 +125,7 @@ fn configure(app: &mut WordApp, p: &Value) -> Result<Value, String> {
         }
         s.language = l;
     }
+    s.endpoint().map_err(|e| e.to_string())?;
     if s.enabled && !http::available() {
         return Err(http::UNSUPPORTED_REASON.into());
     }
@@ -171,6 +187,7 @@ fn poll_at(app: &mut WordApp, ctx: &egui::Context, now: f64) {
         app.session.proofing_changed();
         app.language_tool.settings = Some(settings.clone());
     }
+    wordcraft_proof::external::set_mode(&settings.language);
     take_results(app, ctx, now);
     let lt = &mut app.language_tool;
     if lt.stopped.is_some() || lt.in_flight.is_some() || !app.session.view.proofing {
@@ -185,6 +202,7 @@ fn poll_at(app: &mut WordApp, ctx: &egui::Context, now: f64) {
         lt.seen_rev = rev;
         lt.changed_at = now;
         lt.idle_rev = None;
+        lt.sent.clear();
     }
     let still = now - lt.changed_at;
     if still < DEBOUNCE_S {
@@ -209,8 +227,10 @@ fn poll_at(app: &mut WordApp, ctx: &egui::Context, now: f64) {
         }
     }
     let text = job.text.clone();
+    let key = (job.language.clone(), job.text.clone());
     if lt.worker.as_ref().is_some_and(|w| w.send(job)) {
         lt.in_flight = Some(text);
+        lt.sent.insert(key);
     } else {
         lt.worker = None;
     }
@@ -253,6 +273,7 @@ fn take_results(app: &mut WordApp, ctx: &egui::Context, now: f64) {
             lt.in_flight = None;
         }
         lt.idle_rev = None;
+        let key = (done.language.clone(), done.text.clone());
         match done.result {
             Ok(issues) => {
                 wordcraft_proof::external::put(&done.text, &done.language, issues);
@@ -270,6 +291,8 @@ fn take_results(app: &mut WordApp, ctx: &egui::Context, now: f64) {
             Err(e @ (LtError::BadServer(_) | LtError::Unsupported(_))) => lt.stopped = Some(e.to_string()),
             Err(e) if e.is_auth() => lt.stopped = Some(e.to_string()),
             Err(e) => {
+                // Asked again after the pause.
+                lt.sent.remove(&key);
                 lt.paused_until = now + if e == LtError::RateLimited { RATE_LIMIT_S } else { RETRY_S };
                 lt.last_error = Some(e.to_string());
             }
@@ -414,7 +437,7 @@ mod tests {
         // Off: results are dropped and nothing more is sent.
         app.run("ui.languageTool", json!({"enabled": false})).unwrap();
         super::poll_at(&mut app, &ctx, t + 5.0);
-        assert!(wordcraft_proof::external::get(text).is_none());
+        assert!(wordcraft_proof::external::is_empty());
     }
 
     /// #575: failures pause or stop checking with a message instead of retrying in a loop.
