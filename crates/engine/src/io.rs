@@ -694,6 +694,18 @@ pub fn list_files(dir: &std::path::Path, _max: usize) -> Result<Vec<std::path::P
     Err(format!("{}: there are no folders on the web", dir.display()))
 }
 
+/// The real location of `path` (links followed, `..` resolved), or `None` when it isn't there
+/// or there is no file system. Reads nothing from the file.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn real_path(path: &std::path::Path) -> Option<std::path::PathBuf> {
+    std::fs::canonicalize(path).ok()
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn real_path(_path: &std::path::Path) -> Option<std::path::PathBuf> {
+    None
+}
+
 /// Create folder `dir` and its parents, inside the automation write root when there is one.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn create_dir(dir: &std::path::Path) -> Result<(), String> {

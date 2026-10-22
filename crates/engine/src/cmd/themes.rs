@@ -382,7 +382,7 @@ fn directly_in(dir: &Path, path: &Path) -> Result<bool, CmdError> {
         Some(out)
     }
     // The filesystem's answer first: it follows links before `..`, which spelling alone can't.
-    let real = |p: &Path| std::fs::canonicalize(p).ok();
+    let real = |p: &Path| crate::io::real_path(p);
     if let (Some(a), Some(b)) = (path.parent().and_then(real), real(dir)) {
         return Ok(a == b);
     }
