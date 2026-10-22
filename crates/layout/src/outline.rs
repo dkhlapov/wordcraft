@@ -304,10 +304,17 @@ impl DocLayout {
     }
 
     /// The heading whose fold arrow is at page point (`x`, `y`), with a little slack around it.
-    pub fn fold_arrow_at(&self, page: usize, x: f32, y: f32) -> Option<usize> {
+    pub fn fold_arrow_at(&self, page: usize, x: f32, y: f32, min_side: f32) -> Option<usize> {
+        // The hit area is the arrow's rectangle, grown to `min_side` (page points) each way so it
+        // matches the arrow drawn at least that big on screen when zoomed out.
         self.fold_arrows(page)
             .into_iter()
-            .find(|a| x >= a.rect.x - 2.0 && x <= a.rect.x + a.rect.w + 2.0 && y >= a.rect.y && y <= a.rect.y + a.rect.h)
+            .find(|a| {
+                let w = a.rect.w.max(min_side.max(0.0));
+                let h = a.rect.h.max(min_side.max(0.0));
+                let (cx, cy) = (a.rect.x + a.rect.w / 2.0, a.rect.y + a.rect.h / 2.0);
+                x >= cx - w / 2.0 - 2.0 && x <= cx + w / 2.0 + 2.0 && y >= cy - h / 2.0 && y <= cy + h / 2.0
+            })
             .map(|a| a.block)
     }
 }

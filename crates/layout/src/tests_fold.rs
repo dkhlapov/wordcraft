@@ -118,10 +118,15 @@ fn fold_arrows_sit_beside_headings() {
     for a in &arrows {
         assert!(a.rect.x + a.rect.w <= body.x && a.rect.x >= body.x - 20.0, "{a:?} {body:?}");
         let c = (a.rect.x + a.rect.w / 2.0, a.rect.y + a.rect.h / 2.0);
-        assert_eq!(l.fold_arrow_at(0, c.0, c.1), Some(a.block));
+        assert_eq!(l.fold_arrow_at(0, c.0, c.1, 0.0), Some(a.block));
     }
-    assert_eq!(l.fold_arrow_at(0, body.x + 50.0, arrows[0].rect.y + 2.0), None);
+    assert_eq!(l.fold_arrow_at(0, body.x + 50.0, arrows[0].rect.y + 2.0, 0.0), None);
     assert!(l.fold_arrows(99).is_empty());
+    // Zoomed out the arrow is drawn bigger than its page rectangle; the hit area grows with it.
+    let a = &arrows[0];
+    let off = (a.rect.x + a.rect.w / 2.0 + 8.0, a.rect.y + a.rect.h / 2.0 + 8.0);
+    assert_eq!(l.fold_arrow_at(0, off.0, off.1, 0.0), None);
+    assert_eq!(l.fold_arrow_at(0, off.0, off.1, 20.0), Some(a.block));
 }
 
 /// Notes referenced only from hidden text are left out alike: a footnote's note isn't placed

@@ -2507,7 +2507,12 @@ fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layo
     let hf_enter = enters_header_footer(app, story, hf_zone);
     if resp.double_clicked() {
         // The second press on a heading's fold arrow already toggled it: its release selects nothing.
-        if story == StoryRef::Body && !mods.shift && !mods.alt && folds_headings(app) && layout.fold_arrow_at(page, x, y).is_some() {
+        if story == StoryRef::Body
+            && !mods.shift
+            && !mods.alt
+            && folds_headings(app)
+            && layout.fold_arrow_at(page, x, y, fold_arrow_min_side(rects, layout, page, scale)).is_some()
+        {
             return;
         }
         // Its first press already moved into the header/footer and placed the caret.
@@ -2625,7 +2630,7 @@ fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layo
             && !mods.shift
             && !mods.alt
             && folds_headings(app)
-            && let Some(block) = layout.fold_arrow_at(page, x, y)
+            && let Some(block) = layout.fold_arrow_at(page, x, y, fold_arrow_min_side(rects, layout, page, scale))
         {
             let _ = app.run("outline.toggleHeading", json!({ "block": block }));
             return;
@@ -3339,12 +3344,24 @@ fn paint_fold_arrows(app: &WordApp, ui: &Ui, layout: &DocLayout, rects: &[Rect],
             };
             // Centred on the first line, at least 10 screen points across.
             let centre = to_screen(pos2(0.0, 0.0), *r, k, a.rect.x + a.rect.w / 2.0, a.rect.y + a.rect.h / 2.0);
-            let side = (a.rect.w * k).max(10.0);
+            let side = (a.rect.w * k).max(FOLD_ARROW_MIN_PX);
             // The page is paper (white in both themes): greys that read on it.
             let c = if over { Color32::from_gray(0x50) } else { Color32::from_gray(0x8C) };
             crate::icons::fold_arrow(painter, Rect::from_center_size(centre, vec2(side, side)), fold, c, 1.6);
         }
     }
+}
+
+/// The smallest fold arrow drawn on screen (points); [`paint_fold_arrows`] and its hit test share it.
+const FOLD_ARROW_MIN_PX: f32 = 10.0;
+
+/// [`FOLD_ARROW_MIN_PX`] in page points on `page`, for [`DocLayout::fold_arrow_at`].
+fn fold_arrow_min_side(rects: &[Rect], layout: &DocLayout, page: usize, scale: f32) -> f32 {
+    let k = match (rects.get(page), layout.pages.get(page)) {
+        (Some(r), Some(p)) => page_screen_scale(*r, p, scale),
+        _ => scale,
+    };
+    if k > 0.0 { FOLD_ARROW_MIN_PX / k } else { 0.0 }
 }
 
 fn context_menu(app: &mut WordApp, ui: &mut Ui) {
