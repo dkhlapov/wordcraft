@@ -1697,7 +1697,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         let fallback = if in_bar { egui::CursorIcon::Default } else { egui::CursorIcon::Text };
         ui.ctx().set_cursor_icon(over_object.unwrap_or(fallback));
     }
-    paint_fold_arrows(app, ui, &layout, &rects, geo.scale);
+    paint_fold_arrows(app, ui, &layout, &rects, geo.scale, out.inner_rect);
     crate::table_resize::cursor(app, ui, &resp, &layout, &rects, geo.scale);
     crate::table_mouse::cursor(app, ui, &resp, &layout, &rects, geo.scale);
     crate::table_pen::cursor(app, ui, &resp);
@@ -2978,14 +2978,15 @@ fn folds_headings(app: &WordApp) -> bool {
 /// The fold arrows beside headings (#1745), in the left margin: always for a collapsed heading
 /// (pointing along the line), and for an expanded one while the pointer is over its line or the
 /// arrow (pointing down). Drawn on screen only, never printed.
-fn paint_fold_arrows(app: &WordApp, ui: &Ui, layout: &DocLayout, rects: &[Rect], scale: f32) {
+fn paint_fold_arrows(app: &WordApp, ui: &Ui, layout: &DocLayout, rects: &[Rect], scale: f32, view: Rect) {
     if !folds_headings(app) || app.session.sel.focus.story != StoryRef::Body {
         return;
     }
     let hover = ui.input(|i| i.pointer.hover_pos()).and_then(|p| page_at(rects, layout, scale, p));
-    let painter = ui.painter();
+    // Clipped to the canvas viewport: not over the scroll bar, nor a neighbouring column's margin.
+    let painter = &ui.painter_at(view);
     for (i, r) in rects.iter().enumerate() {
-        if !ui.clip_rect().intersects(*r) {
+        if !view.intersects(*r) {
             continue;
         }
         let Some(page) = layout.pages.get(i) else { continue };

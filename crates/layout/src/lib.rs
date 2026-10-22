@@ -2167,12 +2167,15 @@ fn layout_pass(
     // Endnotes referenced only from text collapsed headings hide are left out, as their
     // footnotes are (#1745).
     let mut folded_notes = HashSet::new();
+    let mut visible_notes = HashSet::new();
     if !ctx.folded.is_empty() {
         doc.objects_in_reading_order_by_block(&mut |block, p, k| {
-            if ctx.folded.get(block).copied().unwrap_or(false)
-                && let Some(InlineObject::NoteRef { id, .. }) = p.objects.get(k)
-            {
-                folded_notes.insert(*id);
+            if let Some(InlineObject::NoteRef { id, .. }) = p.objects.get(k) {
+                if ctx.folded.get(block).copied().unwrap_or(false) {
+                    folded_notes.insert(*id);
+                } else {
+                    visible_notes.insert(*id);
+                }
             }
             true
         });
@@ -2182,7 +2185,7 @@ fn layout_pass(
             .fields
             .notes
             .iter()
-            .filter(|(id, _)| doc.parts.get(id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Endnote) && !folded_notes.contains(*id))
+            .filter(|(id, _)| doc.parts.get(id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Endnote) && (!folded_notes.contains(*id) || visible_notes.contains(*id)))
             .map(|(id, n)| (n.order, *id, n.section))
             .collect();
         ids.sort();

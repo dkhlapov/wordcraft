@@ -149,6 +149,22 @@ fn notes_referenced_from_hidden_text_are_left_out_alike() {
     assert!(!parts.contains(&foot) && !parts.contains(&end), "{parts:?}");
 }
 
+/// An endnote referenced from hidden text and from shown text stays.
+#[test]
+fn an_endnote_referenced_from_shown_text_too_stays() {
+    use wordcraft_doc::para::{InlineObject, NoteKind};
+    use wordcraft_doc::{PartKind, Pos};
+    let mut d = doc(0);
+    let both = d.add_part(PartKind::Endnote, vec![para("Both endnote", ParaProps::default())]);
+    for block in [1, 5] {
+        let r = InlineObject::NoteRef { kind: NoteKind::Endnote, id: both, custom: String::new() };
+        d.insert_object(&Pos::body(block, 0), r, &Default::default()).unwrap();
+    }
+    let l = lay(&d, ViewMode::Print);
+    let placed = l.pages.iter().flat_map(|p| p.items.iter()).any(|it| matches!(it, Placed::Lines { story: StoryRef::Part(id), .. } if *id == both));
+    assert!(placed, "the endnote stays while a shown reference remains");
+}
+
 /// A right-to-left heading's arrow sits on its start side, the right, and says so.
 #[test]
 fn a_right_to_left_headings_arrow_is_on_the_right() {
