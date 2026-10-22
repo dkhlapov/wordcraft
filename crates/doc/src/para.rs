@@ -77,12 +77,17 @@ pub enum WrapText {
 impl WrapText {
     /// From the OOXML value (`bothSides`, `left`, `right`, `largest`).
     pub fn from_ooxml(v: &str) -> Option<WrapText> {
-        match v {
-            "bothSides" => Some(WrapText::BothSides),
-            "left" => Some(WrapText::Left),
-            "right" => Some(WrapText::Right),
-            "largest" => Some(WrapText::Largest),
-            _ => None,
+        let v = v.trim();
+        if v.eq_ignore_ascii_case("bothSides") || v.eq_ignore_ascii_case("both") {
+            Some(WrapText::BothSides)
+        } else if v.eq_ignore_ascii_case("left") {
+            Some(WrapText::Left)
+        } else if v.eq_ignore_ascii_case("right") {
+            Some(WrapText::Right)
+        } else if v.eq_ignore_ascii_case("largest") {
+            Some(WrapText::Largest)
+        } else {
+            None
         }
     }
 
@@ -216,6 +221,14 @@ pub struct Float {
     /// laid out, as Word for Windows does (Word for Mac draws hidden VML shapes).
     #[serde(skip_serializing_if = "is_false")]
     pub hidden: bool,
+    /// Anchored in a table cell but placed on the page, not in the cell (`wp:anchor/@layoutInCell`
+    /// off, any VML shape in a header or footer): a picture watermark in a header that starts with a table.
+    #[serde(skip_serializing_if = "is_false")]
+    pub outside_cell: bool,
+    /// Stacking order among floating objects (`wp:anchor/@relativeHeight`): higher is drawn on
+    /// top. 0 = unknown, drawn in document order (objects inserted here, or from other formats).
+    #[serde(skip_serializing_if = "is_zero_u32")]
+    pub z: u32,
 }
 
 /// Longest alternative text kept (characters): hostile files and commands are capped.
@@ -254,6 +267,9 @@ fn is_zero(v: &f32) -> bool {
 }
 fn is_false(v: &bool) -> bool {
     !*v
+}
+fn is_zero_u32(v: &u32) -> bool {
+    *v == 0
 }
 
 impl Float {
@@ -445,7 +461,7 @@ impl PictureShape {
 /// The most a picture's side can be padded: crop fractions go no lower (Fit's negative crop).
 pub const MIN_CROP: f32 = -100.0;
 /// The most a command crops away from one side of a picture (Fill, Aspect Ratio).
-pub const MAX_CROP: f32 = 0.495;
+pub const MAX_CROP: f32 = 0.95;
 
 /// An inline object anchored at a U+FFFC in the paragraph text.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -465,8 +481,9 @@ pub enum InlineObject {
         /// negative pads it (transparent, DrawingML's negative `a:srcRect`; Fit).
         #[serde(default)]
         crop: [f32; 4],
-        /// The OLE object (embedded or linked file) this picture shows, as read from a file:
-        /// saving writes the object back, not only its picture. See [`crate::graphic::Embedded`].
+        /// The OLE object (embedded or linked file) or Word signature line this picture shows, as
+        /// read from a file: saving writes the object back, not only its picture. See
+        /// [`crate::graphic::Embedded`].
         #[serde(default, skip_serializing_if = "Option::is_none")]
         ole: Option<std::sync::Arc<crate::graphic::Embedded>>,
         /// Crop to Shape (Picture Format › Crop › Crop to Shape): the outline the picture is
@@ -488,7 +505,7 @@ pub enum InlineObject {
         kind: ShapeKind,
         w: f32,
         h: f32,
-        fill: Option<crate::props::Rgb>,
+        fill: Option<crate::fill::Fill>,
         stroke: Option<crate::props::Rgb>,
         #[serde(default)]
         stroke_width: f32,
@@ -670,10 +687,10 @@ pub struct GroupChild {
 pub const MAX_GROUP_CHILDREN: usize = 1000;
 
 /// The background fill and outline of a Drawing Canvas (an [`InlineObject::Group`] with `canvas`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct CanvasStyle {
-    pub fill: Option<crate::props::Rgb>,
+    pub fill: Option<crate::fill::Fill>,
     pub stroke: Option<crate::props::Rgb>,
     /// Outline width, points.
     pub stroke_width: f32,
@@ -1429,7 +1446,7 @@ impl Paragraph {
         let mut a = 0;
         let mut prev_end = false;
         for (i, c) in t.char_indices() {
-            if i >= off {
+            if i > off {
                 break;
             }
             if prev_end && c != ' ' {
@@ -1442,7 +1459,9 @@ impl Paragraph {
             }
         }
         let mut b = t.len();
-        let mut ended = false;
+        // A caret on the space right after a sentence's end belongs to that sentence; a terminator
+        // directly followed by text ("Hello.World") doesn't end the sentence the caret is in.
+        let mut ended = t.get(..off).unwrap_or("").ends_with(['.', '!', '?']) && t.get(off..).unwrap_or("").starts_with(' ');
         for (i, c) in t.get(off..).unwrap_or("").char_indices() {
             if ended && c != ' ' {
                 b = off + i;
@@ -1459,6 +1478,19 @@ impl Paragraph {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sentence_at_sentence_start() {
+        let p = Paragraph::with_text("Hello. World", CharProps::default());
+        assert_eq!(p.sentence_at(0), (0, 7));
+        assert_eq!(p.sentence_at(6), (0, 7));
+        assert_eq!(p.sentence_at(7), (7, 12));
+        assert_eq!(p.sentence_at(8), (7, 12));
+        assert_eq!(p.sentence_at(99), (7, 12));
+        let p = Paragraph::with_text("Hello.World", CharProps::default());
+        assert_eq!(p.sentence_at(6), (6, 11));
+        assert_eq!(p.sentence_at(8), (6, 11));
+    }
 
     fn bold() -> CharProps {
         CharProps { bold: Some(true), ..Default::default() }
