@@ -145,28 +145,33 @@ pub fn forget(name: &str) {
     enqueue(Write::Delete(name.to_string()));
 }
 
+/// The value stored under `key`, read in a transaction of its own.
+async fn get_one(db: &IdbDatabase, key: &JsValue) -> Result<JsValue, String> {
+    let store = db.transaction_with_str(STORE).map_err(js)?.object_store(STORE).map_err(js)?;
+    let req = store.get(key).map_err(js)?;
+    done(&req).await
+}
+
 /// Add every stored font to the font database (each checked like a new one; one that fails is
 /// logged and skipped), then repaint: the app lays out again when fonts change.
 pub fn load_all(ctx: egui::Context) {
     wasm_bindgen_futures::spawn_local(async move {
         let r: Result<(), String> = async {
             let db = open().await?;
-            let store = db.transaction_with_str(STORE).map_err(js)?.object_store(STORE).map_err(js)?;
-            let keys = js_sys::Array::from(&done(&store.get_all_keys().map_err(js)?).await?);
+            // Each read gets its own transaction: one that has been waited on may already be
+            // finished by the time the next request is made.
+            let keys = {
+                let store = db.transaction_with_str(STORE).map_err(js)?.object_store(STORE).map_err(js)?;
+                js_sys::Array::from(&done(&store.get_all_keys().map_err(js)?).await?)
+            };
             // One font at a time: `get_all` would hold every stored font in memory at once (#1333).
             for i in 0..keys.length() {
                 let key = keys.get(i);
                 let Some(name) = key.as_string() else { continue };
-                let value = match store.get(&key) {
-                    Ok(req) => match done(&req).await {
-                        Ok(v) => v,
-                        Err(e) => {
-                            log::warn!("stored font {name} skipped: {e}");
-                            continue;
-                        }
-                    },
+                let value = match get_one(&db, &key).await {
+                    Ok(v) => v,
                     Err(e) => {
-                        log::warn!("stored font {name} skipped: {}", js(e));
+                        log::warn!("stored font {name} skipped: {e}");
                         continue;
                     }
                 };

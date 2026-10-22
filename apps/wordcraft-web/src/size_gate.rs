@@ -17,7 +17,10 @@ pub fn check_size(name: &str, size: f64, max: u64) -> Result<(), String> {
 /// picture limit, fonts the font limit, anything else the document limit.
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub fn budget_for(name: &str, image_exts: &[&str]) -> u64 {
-    let ext = std::path::Path::new(name).extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    // The same rule the opener uses to tell a format: what follows the last dot of the file
+    // name, so a name that is only ".png" counts as a picture there and here.
+    let file = name.rsplit(['/', '\\']).next().unwrap_or(name);
+    let ext = file.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase()).unwrap_or_default();
     if image_exts.contains(&ext.as_str()) {
         wordcraft_ui_egui::paste_picture::MAX_FILE_BYTES
     } else if wordcraft_fonts::FONT_FILE_EXTS.contains(&ext.as_str()) {
@@ -50,9 +53,9 @@ mod tests {
         assert_eq!(budget_for("face.ttf", &images), wordcraft_fonts::MAX_FONT_FILE_BYTES as u64);
         assert_eq!(budget_for("letter.docx", &images), wordcraft_engine::io::MAX_OPEN_BYTES);
         assert_eq!(budget_for("noextension", &images), wordcraft_engine::io::MAX_OPEN_BYTES);
-        // Only the last extension counts, and a dotfile has none.
+        // Only the last extension counts; a name that is just ".png" is a picture, as the opener sees it.
         assert_eq!(budget_for("scan.png.docx", &images), wordcraft_engine::io::MAX_OPEN_BYTES);
-        assert_eq!(budget_for(".png", &images), wordcraft_engine::io::MAX_OPEN_BYTES);
+        assert_eq!(budget_for(".png", &images), wordcraft_ui_egui::paste_picture::MAX_FILE_BYTES);
     }
 
     #[test]
