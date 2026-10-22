@@ -3163,7 +3163,8 @@ pub fn paragraph_issues(
     let skip = |a: usize, b: usize| runs.iter().any(|r| r.skip && r.range.start < b && a < r.range.end);
     // The external checker's result for this text when it has one (#575), each issue in the
     // language of the run it is in; grammar marks only with `grammar`.
-    if let Some(found) = wordcraft_proof::check_external(&text) {
+    let first_lang = spans.first().map(|(_, l)| *l).unwrap_or_default();
+    if let Some(found) = wordcraft_proof::check_external(&text, first_lang, spelling) {
         let lang_at = |at: usize| spans.iter().find(|(r, _)| r.contains(&at)).map(|(_, l)| *l).unwrap_or_default();
         return found
             .into_iter()

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{OnceLock, RwLock};
 
-use crate::Issue;
+use crate::{Issue, ProofLang};
 
 /// At most this many paragraphs are remembered; past it the store starts over (results are
 /// asked for again as paragraphs are seen).
@@ -30,6 +30,8 @@ pub const MAX_ISSUES: usize = 1_000;
 /// One result: the language it was checked in, its stamp and its issues.
 struct Entry {
     language: String,
+    /// The proofing language of the paragraph it was asked for (what layout can see).
+    proof_lang: ProofLang,
     stamp: u64,
     issues: Vec<Issue>,
 }
@@ -45,6 +47,12 @@ impl Store {
     fn latest(&self, text: &str) -> Option<&Entry> {
         self.map.get(text).and_then(|v| v.last())
     }
+
+    /// The newest result asked for in `lang`, else the newest of all.
+    fn for_lang(&self, text: &str, lang: ProofLang) -> Option<&Entry> {
+        let v = self.map.get(text)?;
+        v.iter().rev().find(|e| e.proof_lang == lang).or_else(|| v.last())
+    }
 }
 
 fn store() -> &'static RwLock<Store> {
@@ -58,6 +66,12 @@ static LEN: AtomicUsize = AtomicUsize::new(0);
 /// Remember the issues an external checker found in `text` checked in `language`. Issues outside the text, empty, or
 /// not on character boundaries are dropped; the rest are sorted by start.
 pub fn put(text: &str, language: &str, issues: Vec<Issue>) {
+    put_as(text, language, ProofLang::default(), issues);
+}
+
+/// [`put`] for a paragraph whose proofing language is `proof_lang`: [`get_for`] finds the result
+/// by it, so two paragraphs with the same text in two languages each show their own (#1283).
+pub fn put_as(text: &str, language: &str, proof_lang: ProofLang, issues: Vec<Issue>) {
     let mut issues: Vec<Issue> = issues
         .into_iter()
         .filter(|i| i.start < i.end && i.end <= text.len() && text.is_char_boundary(i.start) && text.is_char_boundary(i.end))
@@ -75,7 +89,7 @@ pub fn put(text: &str, language: &str, issues: Vec<Issue>) {
     if entries.len() >= MAX_LANGUAGES {
         entries.remove(0);
     }
-    entries.push(Entry { language: language.to_string(), stamp, issues });
+    entries.push(Entry { language: language.to_string(), proof_lang, stamp, issues });
     LEN.store(s.map.len(), Ordering::Relaxed);
 }
 
@@ -87,6 +101,15 @@ pub fn get(text: &str) -> Option<Vec<Issue>> {
         return None;
     }
     store().read().unwrap_or_else(|e| e.into_inner()).latest(text).map(|e| e.issues.clone())
+}
+
+/// The stored issues for exactly `text` for a paragraph in `lang`: the result asked for in that
+/// language when there is one, else the newest.
+pub fn get_for(text: &str, lang: ProofLang) -> Option<Vec<Issue>> {
+    if LEN.load(Ordering::Relaxed) == 0 {
+        return None;
+    }
+    store().read().unwrap_or_else(|e| e.into_inner()).for_lang(text, lang).map(|e| e.issues.clone())
 }
 
 /// Whether a result is stored for exactly `text` checked in `language`. A result in another
@@ -103,7 +126,8 @@ pub fn stamp(text: &str) -> u64 {
     if LEN.load(Ordering::Relaxed) == 0 {
         return 0;
     }
-    store().read().unwrap_or_else(|e| e.into_inner()).latest(text).map(|e| e.stamp).unwrap_or(0)
+    // The sum over the languages: any new result redraws the paragraph.
+    store().read().unwrap_or_else(|e| e.into_inner()).map.get(text).map(|v| v.iter().map(|e| e.stamp).fold(0u64, u64::saturating_add)).unwrap_or(0)
 }
 
 /// Whether anything is stored (cheap; lets callers skip work when no external checker runs).

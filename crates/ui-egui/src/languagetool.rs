@@ -73,6 +73,8 @@ struct InFlight {
     /// The paragraph's proofing text: the key its result is stored under.
     key: String,
     language: String,
+    /// The paragraph's proofing language, what layout looks its result up by.
+    lang: wordcraft_proof::ProofLang,
     sent: SentText,
 }
 
@@ -452,7 +454,7 @@ fn take_results(app: &mut WordApp, ctx: &egui::Context, now: f64) {
         lt.idle_rev = None;
         match done.result {
             Ok(issues) => {
-                wordcraft_proof::external::put(&job.key, &job.language, job.sent.map_back(issues));
+                wordcraft_proof::external::put_as(&job.key, &job.language, job.lang, job.sent.map_back(issues));
                 lt.checked = lt.checked.saturating_add(1);
                 lt.last_error = None;
                 changed = true;
@@ -498,6 +500,7 @@ fn next_job(app: &WordApp, settings: &Settings) -> (Option<InFlight>, bool) {
         let first = p.run_ranges().next().map(|(_, c)| c).unwrap_or(&plain);
         let lang = doc.styles.resolve_char(p.props.style.as_deref(), first).lang;
         let language = settings.language_for(lang.as_deref());
+        let proof_lang = wordcraft_proof::ProofLang::from_tag(lang.as_deref());
         // A result in another language (the paragraph's language changed since) is asked for
         // again (#575 review).
         if wordcraft_proof::external::has(&key, &language) || lt.skipped.contains(&(language.clone(), key.clone())) {
@@ -506,11 +509,11 @@ fn next_job(app: &WordApp, settings: &Settings) -> (Option<InFlight>, bool) {
         let sent = SentText::of(doc, p);
         if sent.text.trim().is_empty() {
             // Nothing to check (all of it left out): nothing to send.
-            wordcraft_proof::external::put(&key, &language, Vec::new());
+            wordcraft_proof::external::put_as(&key, &language, proof_lang, Vec::new());
             stored = true;
             continue;
         }
-        return (Some(InFlight { key, language, sent }), stored);
+        return (Some(InFlight { key, language, lang: proof_lang, sent }), stored);
     }
     (None, stored)
 }

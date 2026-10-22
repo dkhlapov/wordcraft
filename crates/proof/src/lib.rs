@@ -845,11 +845,17 @@ pub fn check_text_with(text: &str, spans: &[(Range<usize>, ProofLang)], opts: &O
     v
 }
 
-/// The external checker's issues for exactly `text`, if it has answered for it ([`external`]),
-/// without spelling issues on words the user added or ignored. `None`: use the built-in checks.
-pub fn check_external(text: &str) -> Option<Vec<Issue>> {
-    let found = external::get(text)?;
-    Some(found.into_iter().filter(|i| i.kind != IssueKind::Spelling || !text.get(i.start..i.end).is_some_and(is_user_word)).collect())
+/// The external checker's issues for exactly `text` as a paragraph in `lang` shows them, if it
+/// has answered for it ([`external`]): spelling issues on words the user added or ignored, or
+/// that `opts` says to ignore (capitals, digits, web addresses), are left out.
+/// `None`: use the built-in checks.
+pub fn check_external(text: &str, lang: ProofLang, opts: &Options) -> Option<Vec<Issue>> {
+    let found = external::get_for(text, lang)?;
+    let ignored = |i: &Issue| {
+        let Some(w) = text.get(i.start..i.end) else { return true };
+        is_user_word(w) || accepted_by_options(w, opts) || (opts.ignore_internet && enclosing_token(text, i.start, i.end).2)
+    };
+    Some(found.into_iter().filter(|i| i.kind != IssueKind::Spelling || !ignored(i)).collect())
 }
 
 /// Grammar issues in a paragraph of English text.
@@ -1691,7 +1697,8 @@ mod tests {
 
     /// The checks a paragraph gets ([`check_external`] first, else the built-in English ones).
     fn check(text: &str) -> Vec<Issue> {
-        check_external(text).unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true, false))
+        check_external(text, ProofLang::En, &Options::default())
+            .unwrap_or_else(|| check_text_with(text, &[(0..text.len(), ProofLang::En)], &Options::default(), true, false))
     }
 
     /// #575: an external checker's result replaces the built-in checks for exactly the text it
@@ -1758,6 +1765,36 @@ mod tests {
             external::put(text, &format!("x{k}"), Vec::new());
         }
         assert!(!external::has(text, "fr-FR") && external::has(text, &format!("x{}", external::MAX_LANGUAGES + 1)));
+    }
+
+    /// #1283 review: a paragraph shows the result asked for in its own language, even when
+    /// another paragraph with the same text was answered later.
+    #[test]
+    fn external_results_are_picked_by_the_paragraph_language() {
+        let text = "Pick by paragraph language 1283.";
+        let issue = |start, end| Issue { start, end, kind: IssueKind::Grammar, message: "m".into(), suggestions: Vec::new(), lang: ProofLang::En };
+        external::put_as(text, "en-US", ProofLang::En, vec![issue(0, 4)]);
+        external::put_as(text, "en-GB", ProofLang::EnGb, vec![issue(5, 7)]);
+        let opts = Options::default();
+        let at = |lang| check_external(text, lang, &opts).unwrap().iter().map(|i| (i.start, i.end)).collect::<Vec<_>>();
+        assert_eq!(at(ProofLang::En), [(0, 4)]);
+        assert_eq!(at(ProofLang::EnGb), [(5, 7)]);
+        assert_eq!(at(ProofLang::EnCa), [(5, 7)], "no result for the language: the newest");
+    }
+
+    /// #1283 review: the ignore options (capitals, digits, web addresses) apply to external
+    /// spelling issues as to the built-in ones, whenever they are read.
+    #[test]
+    fn external_spelling_issues_follow_the_ignore_options() {
+        let text = "Zqxvk NASAX abc123 see www.zqxvk.example 1283";
+        let sp = |a, b| Issue { start: a, end: b, kind: IssueKind::Spelling, message: "m".into(), suggestions: Vec::new(), lang: ProofLang::En };
+        let (w, caps, digits, url) = ((0, 5), (6, 11), (12, 18), (text.find("zqxvk").unwrap(), text.find("zqxvk").unwrap() + 5));
+        external::put(text, "en-US", [w, caps, digits, url].iter().map(|r| sp(r.0, r.1)).collect());
+        let got = |opts: &Options| check_external(text, ProofLang::En, opts).unwrap().iter().map(|i| (i.start, i.end)).collect::<Vec<_>>();
+        assert_eq!(got(&Options::default()), [w]);
+        let all = Options { ignore_uppercase: false, ignore_numbers: false, ignore_internet: false };
+        assert_eq!(got(&all), [w, caps, digits, url]);
+        assert_eq!(got(&Options { ignore_uppercase: false, ..Options::default() }), [w, caps]);
     }
 
     /// #575: a range that cuts a character in two is dropped, never sliced.
