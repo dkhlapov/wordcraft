@@ -2648,3 +2648,9 @@ preview	Title	제목
 	Use the browser's full screen (F11)	브라우저의 전체 화면을 사용하세요 (F11)
 	leave the equation first	먼저 수식에서 나가세요
 	the Spike is empty	스파이크가 비어 있습니다
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	Word 잉크가 들어 있는 그룹은 아직 그룹 해제할 수 없습니다
+	drop caps can't go in a table	표 안에는 첫 글자 장식을 넣을 수 없습니다
+	the document is protected	문서가 보호되어 있습니다
+	the paragraph is empty	단락이 비어 있습니다
+	the paragraph starts with a space	단락이 공백으로 시작합니다

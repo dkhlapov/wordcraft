@@ -2819,3 +2819,7 @@ preview	Title	Tytuł
 	this text box is already linked: break the link first	to pole tekstowe jest już połączone: najpierw przerwij połączenie
 	leave the equation first	najpierw opuść równanie
 	the Spike is empty	zbieracz jest pusty
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	grupy z atramentem programu Word nie można jeszcze rozgrupować
+	drop caps can't go in a table	inicjału nie można umieścić w tabeli
+	the document is protected	dokument jest chroniony

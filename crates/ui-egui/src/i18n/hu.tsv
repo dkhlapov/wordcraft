@@ -2794,3 +2794,7 @@
 	this text box is already linked: break the link first	ez a szövegdoboz már csatolva van: előbb bontsa a csatolást
 	leave the equation first	először lépjen ki az egyenletből
 	the Spike is empty	a gyűjtő üres
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	a Word-tintát tartalmazó csoport még nem bontható szét
+	drop caps can't go in a table	iniciálé nem kerülhet táblázatba
+	the document is protected	a dokumentum védett

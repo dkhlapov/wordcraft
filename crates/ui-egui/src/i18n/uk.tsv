@@ -2409,3 +2409,9 @@
 	this text box is already linked: break the link first	це текстове поле вже зв’язане: спочатку розірвіть зв’язок
 	leave the equation first	спершу вийдіть з рівняння
 	the Spike is empty	накопичувач порожній
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	групу з рукописним введенням Word поки не можна розгрупувати
+	drop caps can't go in a table	буквицю не можна помістити в таблицю
+	the document is protected	документ захищено
+	the paragraph is empty	абзац порожній
+	the paragraph starts with a space	абзац починається з пробілу

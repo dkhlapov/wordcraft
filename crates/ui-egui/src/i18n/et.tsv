@@ -2431,3 +2431,9 @@
 	this text box is already linked: break the link first	see tekstiväli on juba lingitud: katkestage esmalt link
 	leave the equation first	lahkuge esmalt valemist
 	the Spike is empty	koguja on tühi
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	Wordi tindiga rühma ei saa veel lahutada
+	drop caps can't go in a table	tabelisse ei saa lisada hiidtähte
+	the document is protected	dokument on kaitstud
+	the paragraph is empty	lõik on tühi
+	the paragraph starts with a space	lõik algab tühikuga

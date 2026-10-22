@@ -434,8 +434,13 @@ fn literals(code: &str) -> Vec<String> {
             ends
         });
         let Some((end, _)) = end else { break };
-        out.push(body[..end].replace("\\'", "'").replace("\\\"", "\""));
-        rest = &body[end + 1..];
+        let after = &body[end + 1..];
+        // `Some("readOnly" | "forms") => …` matches on a value; it isn't shown to anyone.
+        let pattern = after.trim_start().starts_with('|') || rest[..start].trim_end().ends_with('|');
+        if !pattern {
+            out.push(body[..end].replace("\\'", "'").replace("\\\"", "\""));
+        }
+        rest = after;
     }
     out
 }

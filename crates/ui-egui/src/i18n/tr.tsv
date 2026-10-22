@@ -2796,3 +2796,7 @@ preview	Title	Örnek
 	this text box is already linked: break the link first	bu metin kutusu zaten bağlı: önce bağlantıyı kesin
 	leave the equation first	önce denklemden çıkın
 	the Spike is empty	biriktirici boş
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	Word mürekkebi içeren bir grubun grubu henüz çözülemez
+	drop caps can't go in a table	tabloya büyük başlangıç harfi konamaz
+	the document is protected	belge korumalı

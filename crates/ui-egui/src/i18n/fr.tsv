@@ -2805,3 +2805,9 @@ template	Letter	Lettre
 	this text box is already linked: break the link first	cette zone de texte est déjà liée : rompez d’abord le lien
 	leave the equation first	quittez d'abord l'équation
 	the Spike is empty	le pique-notes est vide
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	un groupe contenant de l'encre Word ne peut pas encore être dissocié
+	drop caps can't go in a table	une lettrine ne peut pas aller dans un tableau
+	the document is protected	le document est protégé
+	the paragraph is empty	le paragraphe est vide
+	the paragraph starts with a space	le paragraphe commence par une espace

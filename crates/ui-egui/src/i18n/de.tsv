@@ -2396,3 +2396,9 @@
 	this text box is already linked: break the link first	dieses Textfeld ist bereits verknüpft: heben Sie zuerst die Verknüpfung auf
 	leave the equation first	zuerst die Formel verlassen
 	the Spike is empty	die Sammlung ist leer
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	eine Gruppe mit Word-Freihandtinte lässt sich noch nicht aufheben
+	drop caps can't go in a table	ein Initial passt nicht in eine Tabelle
+	the document is protected	das Dokument ist geschützt
+	the paragraph is empty	der Absatz ist leer
+	the paragraph starts with a space	der Absatz beginnt mit einem Leerzeichen

@@ -2398,3 +2398,9 @@
 	this text box is already linked: break the link first	此文字方塊已連結: 請先中斷連結
 	leave the equation first	請先離開公式
 	the Spike is empty	收集區是空的
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	包含 Word 筆跡的群組暫時無法取消群組
+	drop caps can't go in a table	首字放大不能放在表格中
+	the document is protected	文件受保護
+	the paragraph is empty	段落是空的
+	the paragraph starts with a space	段落以空格開頭

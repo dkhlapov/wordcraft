@@ -2823,3 +2823,7 @@ template	Letter	Lettera
 	this text box is already linked: break the link first	questa casella di testo è già collegata: interrompi prima il collegamento
 	leave the equation first	esci prima dall'equazione
 	the Spike is empty	il raccoglitore è vuoto
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	un gruppo con inchiostro di Word non può ancora essere separato
+	drop caps can't go in a table	un capolettera non può stare in una tabella
+	the document is protected	il documento è protetto

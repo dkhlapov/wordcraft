@@ -2788,3 +2788,7 @@
 	this text box is already linked: break the link first	това текстово поле вече е свързано: първо прекъснете връзката
 	leave the equation first	излезте първо от уравнението
 	the Spike is empty	натрупването е празно
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	група с мастило от Word още не може да се разгрупира
+	drop caps can't go in a table	буквицата не може да се постави в таблица
+	the document is protected	документът е защитен

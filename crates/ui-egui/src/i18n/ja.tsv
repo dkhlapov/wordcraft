@@ -2397,3 +2397,9 @@
 	this text box is already linked: break the link first	このテキスト ボックスは既にリンクされています: 先にリンクを解除してください
 	leave the equation first	先に数式から出てください
 	the Spike is empty	スパイクは空です
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	Word のインクを含むグループはまだグループ解除できません
+	drop caps can't go in a table	ドロップキャップは表の中に入れられません
+	the document is protected	文書は保護されています
+	the paragraph is empty	段落が空です
+	the paragraph starts with a space	段落がスペースで始まっています

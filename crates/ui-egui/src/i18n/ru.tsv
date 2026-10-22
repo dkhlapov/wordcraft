@@ -2797,3 +2797,7 @@ preview	Title	Пример
 	this text box is already linked: break the link first	это текстовое поле уже связано: сначала разорвите связь
 	leave the equation first	сначала выйдите из уравнения
 	the Spike is empty	копилка пуста
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	группу с рукописным вводом Word пока нельзя разгруппировать
+	drop caps can't go in a table	буквицу нельзя поместить в таблицу
+	the document is protected	документ защищён

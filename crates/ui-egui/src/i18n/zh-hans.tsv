@@ -2409,3 +2409,9 @@
 	this text box is already linked: break the link first	此文本框已链接: 请先断开链接
 	leave the equation first	请先退出公式
 	the Spike is empty	图文场为空
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	包含 Word 墨迹的组暂时无法取消组合
+	drop caps can't go in a table	首字下沉不能放在表格中
+	the document is protected	文档受保护
+	the paragraph is empty	段落为空
+	the paragraph starts with a space	段落以空格开头

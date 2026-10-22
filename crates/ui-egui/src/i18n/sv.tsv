@@ -2826,3 +2826,7 @@ template	Letter	Brev
 	this text box is already linked: break the link first	denna textruta är redan länkad: bryt länken först
 	leave the equation first	lämna först ekvationen
 	the Spike is empty	samlaren är tom
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	en grupp med Word-bläck kan inte avgrupperas än
+	drop caps can't go in a table	en anfang kan inte läggas i en tabell
+	the document is protected	dokumentet är skyddat

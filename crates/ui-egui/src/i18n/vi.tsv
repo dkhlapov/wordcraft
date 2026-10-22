@@ -2838,3 +2838,7 @@ template	Letter	Thư
 	this text box is already linked: break the link first	hộp văn bản này đã được liên kết: hãy ngắt liên kết trước
 	leave the equation first	hãy thoát khỏi phương trình trước
 	the Spike is empty	bộ gom đang trống
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	chưa thể tách nhóm chứa mực Word
+	drop caps can't go in a table	không thể đặt chữ cái lớn đầu đoạn trong bảng
+	the document is protected	tài liệu đang được bảo vệ

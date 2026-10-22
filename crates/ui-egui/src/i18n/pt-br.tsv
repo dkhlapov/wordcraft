@@ -2409,3 +2409,9 @@
 	this text box is already linked: break the link first	esta caixa de texto já está vinculada: desfaça o vínculo primeiro
 	leave the equation first	saia primeiro da equação
 	the Spike is empty	o coletor está vazio
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	um grupo com tinta do Word ainda não pode ser desagrupado
+	drop caps can't go in a table	não é possível colocar capitular em uma tabela
+	the document is protected	o documento está protegido
+	the paragraph is empty	o parágrafo está vazio
+	the paragraph starts with a space	o parágrafo começa com um espaço

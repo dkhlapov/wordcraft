@@ -2407,3 +2407,9 @@
 	this text box is already linked: break the link first	ovaj okvir za tekst je već povezan: prvo prekinite vezu
 	leave the equation first	prvo izađite iz jednačine
 	the Spike is empty	sakupljač je prazan
+# More reasons a ribbon control is off (#2678)
+	a group holding Word ink can't be ungrouped yet	grupa sa Word mastilom još ne može da se razgrupiše
+	drop caps can't go in a table	početno slovo ne može u tabelu
+	the document is protected	dokument je zaštićen
+	the paragraph is empty	pasus je prazan
+	the paragraph starts with a space	pasus počinje razmakom
