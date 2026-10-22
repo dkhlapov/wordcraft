@@ -1846,6 +1846,32 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             ]);
             pen.arrow(8.0, 10.5, 8.0, 1.5, a);
         }
+        // File (Backstage) side menu (#1714). Save As: the save tray with a pencil.
+        "saveAs" => {
+            pen.line(&[(1.5, 9.5), (1.5, 13.5), (2.5, 14.5), (13.5, 14.5), (14.5, 13.5), (14.5, 9.5)]);
+            pen.pencil(6.0, 1.5, 0.8, a);
+        }
+        // Export: a page with an arrow leaving it.
+        "export" => {
+            pen.page_rect(2.0, 1.5, 10.0, 14.5);
+            pen.arrow(6.0, 8.0, 14.5, 8.0, a);
+        }
+        // Options: a gear.
+        "options" => {
+            for k in 0..8 {
+                let t = k as f32 * std::f32::consts::FRAC_PI_4;
+                let at = |radius: f32, dt: f32| (8.0 + radius * (t + dt).cos(), 8.0 + radius * (t + dt).sin());
+                pen.fill(&[at(4.0, -0.28), at(6.5, -0.17), at(6.5, 0.17), at(4.0, 0.28)], c);
+            }
+            pen.circle(8.0, 8.0, 4.4);
+            pen.circle_c(8.0, 8.0, 1.8, a);
+        }
+        // Recover: a page with a turning arrow, a copy brought back.
+        "recover" => {
+            pen.page_rect(2.0, 1.5, 10.0, 12.5);
+            pen.arc(10.8, 10.8, 3.2, -90.0, 180.0, a);
+            pen.head(7.6, 10.8, -90.0, a);
+        }
         "user" => pen.person_filled(8.0, 15.0, 1.5, a),
         "close" => {
             pen.line(&[(3.5, 3.5), (12.5, 12.5)]);
