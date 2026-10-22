@@ -36,12 +36,20 @@ fn png() -> Vec<u8> {
     b
 }
 
+/// A shape's plain colour (these shapes have no gradients).
+fn solid(f: &Option<wordcraft_doc::fill::Fill>) -> Option<Rgb> {
+    match f {
+        Some(wordcraft_doc::fill::Fill::Solid { color, .. }) => Some(*color),
+        _ => None,
+    }
+}
+
 fn shape(kind: ShapeKind, fill: Option<Rgb>, picture: Option<String>) -> InlineObject {
     InlineObject::Shape {
         kind,
         w: 100.0,
         h: 60.0,
-        fill,
+        fill: fill.map(wordcraft_doc::fill::Fill::solid),
         stroke: Some(Rgb(0x0E, 0x40, 0x5A)),
         stroke_width: 1.0,
         float: Float::default(),
@@ -118,7 +126,7 @@ fn picture_fill_reads_from_blip_fill() {
         .iter()
         .filter_map(|o| match o {
             InlineObject::Shape { kind, fill, extra, .. } => {
-                Some((*kind, *fill, extra.picture.as_ref().and_then(|k| d.media.get(k)).map(|b| b.to_vec())))
+                Some((*kind, solid(fill), extra.picture.as_ref().and_then(|k| d.media.get(k)).map(|b| b.to_vec())))
             }
             _ => None,
         })
@@ -143,7 +151,7 @@ fn picture_fill_round_trips() {
     assert!(xml.contains("<a:stretch><a:fillRect/></a:stretch>"), "{xml}");
     let r = wordcraft_docx::read(&bytes).unwrap();
     let got = objects(&r).into_iter().find_map(|o| match o {
-        InlineObject::Shape { kind, fill, extra, .. } => Some((kind, fill, extra.picture.and_then(|k| r.media.get(&k).map(|b| b.to_vec())))),
+        InlineObject::Shape { kind, fill, extra, .. } => Some((kind, solid(&fill), extra.picture.and_then(|k| r.media.get(&k).map(|b| b.to_vec())))),
         _ => None,
     });
     assert_eq!(got, Some((ShapeKind::Hexagon, None, Some(png))));
