@@ -108,7 +108,8 @@ The same gaps grouped the way the parity documents are, for agents working in on
   on the clipboard, so other programs keep the formatting (#1523), with equations as MathML
   (#816), and a lone equation also in the MathML clipboard formats on Windows and macOS (#1297;
   pasting into Word/LibreOffice not yet verified); RTF is written on Windows, macOS and Wayland,
-  while an X11 copy still carries text and HTML only (arboard owns the selection there). Paste
+  while an X11 copy still carries text and HTML only (arboard owns the selection there); a
+  copy of only pictures or shapes carries neither, so WordCraft pastes its own copy. Paste
   reads RTF on all four.
   Options › Animation effects › Use system setting reads macOS (Reduce motion) and the Linux/BSD
   desktops (`apps/wordcraft/src/animations.rs`) but hasn't been tried on a Mac or in a real

@@ -76,7 +76,7 @@ Footnote and endnote editing keeps body and note text at normal opacity, on ligh
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-10-17 | trivial | Copy and Cut put RTF beside the text and HTML on the system clipboard, for programs that read RTF rather than HTML (Windows "Rich Text Format", macOS `public.rtf`, Wayland `text/rtf`; an X11 copy stays text and HTML, since arboard owns the selection there); Paste reads another program's RTF on macOS and X11 too, as on Windows and Wayland |
+| 2026-10-17 | trivial | Copy and Cut put RTF beside the text and HTML on the system clipboard, for programs that read RTF rather than HTML (Windows "Rich Text Format", macOS `public.rtf`, Wayland `text/rtf`; an X11 copy stays text and HTML, since arboard owns the selection there; a copy of only pictures or shapes carries no HTML or RTF, so pasting it back keeps every detail); Paste reads another program's RTF on macOS and X11 too, as on Windows and Wayland |
 | 2026-10-22 | trivial | While editing a header, a single click in the footer (or the reverse, or another page's own header) edits that one with the caret where clicked; the click was placed in the header being edited, and the view scrolled back to it, so a double-click on the footer rarely landed |
 | 2026-10-18 | trivial | Explicit New/Open is not interrupted by startup recovery discovery; older copies stay available and Recover follows the interface theme. |
 | 2026-10-19 | trivial | Insert Table of Figures opens a Table of Figures dialog: caption label (Figure, Table, Equation, the user's own and those the document's captions use), Include label and number, page numbers, right margin and tab leader, with a preview; the ribbon button, KeyTip and command search reach it (#3013) |
