@@ -1205,6 +1205,65 @@ mod tests {
         assert!(encrypt_standard_for_tests(&pkg, "", 128).is_err());
     }
 
+    /// A Standard-encrypted file assembled byte by byte from [MS-OFFCRYPTO] §2.3.4.5, §2.3.2, §2.3.3
+    /// and §2.3.4.4 with literal field values, without the test encryptor, so a layout mistake
+    /// shared by the encryptor and the reader can't pass. Only the key derivation and AES-ECB
+    /// (pinned by `standard_key_matches_an_independent_derivation`) are reused.
+    fn hand_built_standard(payload: &[u8], password: &str) -> Vec<u8> {
+        let salt: [u8; 16] = [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF];
+        let verifier: [u8; 16] = *b"verifier-16bytes";
+        let key = standard_key(&salt, password, 16);
+        let mut hash = sha1::Sha1::digest(verifier).to_vec();
+        hash.resize(32, 0); // the hash, zero-padded to two AES blocks
+        let csp: Vec<u8> = "WordCraft test provider".encode_utf16().chain([0]).flat_map(u16::to_le_bytes).collect();
+
+        let mut header = Vec::new();
+        header.extend_from_slice(&0x24u32.to_le_bytes()); // Flags: fCryptoAPI | fAES
+        header.extend_from_slice(&0u32.to_le_bytes()); // SizeExtra
+        header.extend_from_slice(&0x660Eu32.to_le_bytes()); // AlgID: AES-128
+        header.extend_from_slice(&0x8004u32.to_le_bytes()); // AlgIDHash: SHA-1
+        header.extend_from_slice(&128u32.to_le_bytes()); // KeySize, in bits
+        header.extend_from_slice(&0x18u32.to_le_bytes()); // ProviderType: AES
+        header.extend_from_slice(&0u32.to_le_bytes()); // Reserved1
+        header.extend_from_slice(&0u32.to_le_bytes()); // Reserved2
+        header.extend_from_slice(&csp); // CSPName: UTF-16LE, NUL-terminated
+
+        let mut info = Vec::new();
+        info.extend_from_slice(&3u16.to_le_bytes()); // Version major
+        info.extend_from_slice(&2u16.to_le_bytes()); // Version minor
+        info.extend_from_slice(&0x24u32.to_le_bytes()); // Flags: fCryptoAPI | fAES
+        info.extend_from_slice(&(header.len() as u32).to_le_bytes()); // HeaderSize
+        info.extend_from_slice(&header);
+        info.extend_from_slice(&16u32.to_le_bytes()); // SaltSize
+        info.extend_from_slice(&salt); // Salt
+        info.extend_from_slice(&ecb(&key, &verifier, true).unwrap()); // EncryptedVerifier
+        info.extend_from_slice(&20u32.to_le_bytes()); // VerifierHashSize (SHA-1)
+        info.extend_from_slice(&ecb(&key, &hash, true).unwrap()); // EncryptedVerifierHash
+
+        let mut padded = payload.to_vec();
+        padded.resize(payload.len().next_multiple_of(16), 0);
+        let mut package = (payload.len() as u64).to_le_bytes().to_vec(); // StreamSize
+        package.extend_from_slice(&ecb(&key, &padded, true).unwrap());
+        package.extend_from_slice(&[0xEE, 0xEE, 0xEE]); // trailing padding the spec allows
+        cfb_with(&info, &package)
+    }
+
+    #[test]
+    fn standard_package_built_by_hand_from_the_spec_opens() {
+        let payload: Vec<u8> = (0..37u8).map(|i| i.wrapping_mul(5)).collect();
+        let file = hand_built_standard(&payload, "pw");
+        assert!(is_encrypted(&file));
+        assert_eq!(decrypt(&file, Some("pw")), Ok(payload.clone()));
+        assert_eq!(decrypt(&file, Some("PW")), Err(DocxError::WrongPassword));
+        assert_eq!(decrypt(&file, None), Err(DocxError::PasswordRequired));
+        // The test encryptor writes the same fixed fields: version and flags (bytes 0..8) and the
+        // header's eight words (12..44); HeaderSize differs with the CSP name, the rest is random.
+        let (hand, _) = streams(&file);
+        let (made, _) = streams(&encrypt_standard_for_tests(&payload, "pw", 128).unwrap());
+        assert_eq!(hand[..8], made[..8]);
+        assert_eq!(hand[12..44], made[12..44]);
+    }
+
     /// The two streams of an encrypted package.
     fn streams(file: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let mut comp = cfb::CompoundFile::open(Cursor::new(file)).unwrap();
