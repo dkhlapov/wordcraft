@@ -328,7 +328,7 @@ mod tests {
         for _ in 0..(MAX_DEPTH + 2) {
             let mut t = wordcraft_doc::table::Table::new(1, 1, 100.0);
             t.rows[0].cells[0].blocks = inner;
-            inner = vec![std::sync::Arc::new(Block::Table(t))].into();
+            inner = vec![std::sync::Arc::new(Block::Table(t))];
         }
         doc.body = inner;
         for name in ["n.rtf", "n.odt"] {

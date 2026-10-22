@@ -1155,7 +1155,7 @@ impl WordApp {
     /// Answer the Save Changes prompt: Save (through Save As for a new document) and carry on,
     /// carry on without saving, or cancel. A failed or cancelled save cancels too.
     fn answer_save_changes(&mut self, choice: SaveChoice) -> Result<Value, String> {
-        let Some(dialogs::Dialog::SaveChanges { mut then, mut params, document, .. }) = self.dialog.take() else {
+        let Some(dialogs::Dialog::SaveChanges { mut then, params, document, .. }) = self.dialog.take() else {
             return Err("no Save Changes prompt is open".into());
         };
         if document != self.session.document_id() {
@@ -1274,6 +1274,11 @@ impl WordApp {
                     }
                 }
                 let Some((then, params)) = then else { return r };
+                // A failed save puts the Save Changes prompt back with the reason and the held
+                // command, like the other ways into this save.
+                if let Err(error) = &r {
+                    return Err(self.save_failed(error, then, params, document));
+                }
                 if !self.safely_saved(saved) {
                     return Ok(json!({"done": false}));
                 }

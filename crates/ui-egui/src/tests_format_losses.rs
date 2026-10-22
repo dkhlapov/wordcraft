@@ -190,6 +190,24 @@ fn the_save_changes_prompt_warns_before_saving_to_rtf() {
     }
 }
 
+/// Continue on the warning whose save then fails brings the Save Changes prompt back with the
+/// held command, instead of dropping both.
+#[test]
+fn a_failed_continue_restores_the_save_changes_prompt() {
+    let dir = scratch("failed-continue");
+    let mut a = draft(true);
+    pick(&mut a, vec![dir.join("no-such-folder").join("draft.rtf")]);
+    a.run("file.new", json!({})).unwrap();
+    assert_eq!(prompt(&a), Some("saveChanges"));
+    a.run("ui.saveChanges", json!({"answer": "save"})).unwrap();
+    assert_eq!(prompt(&a), Some("formatLosses"));
+    assert!(a.run("ui.formatLosses", json!({"answer": "continue"})).is_err());
+    assert_eq!(prompt(&a), Some("saveChanges"), "the prompt is back, still holding File New");
+    assert!(a.session.dirty);
+    assert!(a.session.doc.plain_text(wordcraft_doc::StoryRef::Body).contains(TEXT));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// AutoSave writes only files that keep everything: not an RTF that would lose a comment.
 #[test]
 fn autosave_skips_an_rtf_file_that_would_lose_something() {
