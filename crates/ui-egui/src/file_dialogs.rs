@@ -689,4 +689,37 @@ mod tests {
         assert_eq!(a.poll_file_dialog().unwrap().unwrap(), json!({"cancelled": true}));
         assert!(!filled(&a));
     }
+
+    /// The ribbon's Shape Fill › Picture… item opens the picker for the selected shape, and the
+    /// chosen picture fills that shape (through the menu, not a direct call).
+    #[test]
+    fn shape_fill_picture_menu_item_opens_the_picker_and_fills() {
+        use egui_kittest::kittest::Queryable;
+        let png = crate::paste_picture::png_from_rgba(2, 2, vec![255; 16]).unwrap();
+        let dir = scratch("fillmenu");
+        let path = dir.join("fill.png");
+        std::fs::write(&path, png).unwrap();
+        let path = path.to_string_lossy().into_owned();
+        let (mut a, shown) = async_app();
+        a.run("insert.shape", json!({"kind": "rectangle", "width": 100, "height": 50})).unwrap();
+        a.ui.tab = "Shape Format".into();
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                let ctx = ui.ctx().clone();
+                app.logic(&ctx);
+                app.ui(ui);
+            },
+            a,
+        );
+        h.run_steps(6);
+        h.get_by_label("Shape Fill").click();
+        h.run_steps(3);
+        h.get_by_label("Picture… ").click();
+        h.run_steps(3);
+        assert_eq!(shown.borrow().len(), 1, "the picker opened");
+        answer(&shown, Some(&path));
+        h.run_steps(4);
+        let filled = matches!(wordcraft_engine::cmd::objects::selected(&h.state().session), Some((_, wordcraft_doc::para::InlineObject::Shape { extra, .. })) if extra.picture.is_some());
+        assert!(filled, "the picture fills the selected shape");
+    }
 }
