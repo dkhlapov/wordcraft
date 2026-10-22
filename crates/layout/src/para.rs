@@ -3171,9 +3171,7 @@ pub fn paragraph_issues(
     // The external checker's result for this text when it has one (#575), each issue in the
     // language of the run it is in; grammar marks only with `grammar`.
     // A paragraph mixing languages is stored under all of them (#763).
-    let tagged: Vec<(std::ops::Range<usize>, Option<&str>)> = runs.iter().map(|r| (r.range.clone(), r.tag.as_deref())).collect();
-    let external_language =
-        wordcraft_proof::external::signature(&wordcraft_proof::external::language_spans(&text, &tagged, wordcraft_proof::external::wanted));
+    let external_language = external_language_of(&text, runs);
     if let Some(found) = wordcraft_proof::check_external(&text, &external_language) {
         let lang_at = |at: usize| spans.iter().find(|(r, _)| r.contains(&at)).map(|(_, l)| *l).unwrap_or_default();
         return found
@@ -3208,12 +3206,16 @@ fn proof_issues(
         .collect()
 }
 
-/// The language an external checker is asked to check `p` in: the setting, or the language of
-/// its first run (the one the checker's scheduler uses).
-pub fn external_language(doc: &Document, p: &Paragraph) -> String {
-    let plain = CharProps::default();
-    let first = p.run_ranges().next().map(|(_, c)| c).unwrap_or(&plain);
-    wordcraft_proof::external::wanted(doc.styles.resolve_char(p.props.style.as_deref(), first).lang.as_deref())
+/// The language an external checker's result for `p` is stored under: the setting, or the
+/// language of its runs, all of them when they differ (#763). `table` is the cell's
+/// table-style character formatting, as for [`proof_runs`].
+pub fn external_language(doc: &Document, p: &Paragraph, table: Option<&CharProps>) -> String {
+    external_language_of(&proof_text(p), &proof_runs(doc, p, table))
+}
+
+fn external_language_of(text: &str, runs: &[ProofRun]) -> String {
+    let tagged: Vec<(std::ops::Range<usize>, Option<&str>)> = runs.iter().map(|r| (r.range.clone(), r.tag.as_deref())).collect();
+    wordcraft_proof::external::signature(&wordcraft_proof::external::language_spans(text, &tagged, wordcraft_proof::external::wanted))
 }
 
 /// Text for proofing with the same byte offsets: inline objects and tracked deletions become
