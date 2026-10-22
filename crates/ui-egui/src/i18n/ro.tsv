@@ -2762,3 +2762,14 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+	API key:	Cheie API:
+	Check spelling and grammar with LanguageTool	Verifică ortografia și gramatica cu LanguageTool
+	Detect automatically	Detectează automat
+	Each paragraph's proofing language	Limba de verificare a fiecărui paragraf
+	Language:	Limba:
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Verificarea cu LanguageTool necesită aplicația desktop; versiunea din browser nu poate încă trimite text către un server de verificare.
+	Paragraphs checked: {count}	Paragrafe verificate: {count}
+	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Trimite textul paragrafelor tale către serverul LanguageTool de mai jos. Dezactivat, se folosește verificatorul încorporat WordCraft și nimic nu părăsește acest computer.
+	Server:	Server:
+	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Folosește propriul server LanguageTool introducând adresa lui, de exemplu http://localhost:8081.
+	Username:	Nume de utilizator:
