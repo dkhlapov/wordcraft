@@ -10,8 +10,8 @@
 //! Each stored result has a [`stamp`] (a counter that only rises) that layout folds into its
 //! per-paragraph cache key, so a result arriving redraws only its own paragraph.
 
-use std::ops::Range;
 use std::collections::HashMap;
+use std::ops::Range;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{OnceLock, RwLock};
 

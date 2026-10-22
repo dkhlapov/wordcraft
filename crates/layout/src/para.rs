@@ -3172,7 +3172,8 @@ pub fn paragraph_issues(
     // language of the run it is in; grammar marks only with `grammar`.
     // A paragraph mixing languages is stored under all of them (#763).
     let tagged: Vec<(std::ops::Range<usize>, Option<&str>)> = runs.iter().map(|r| (r.range.clone(), r.tag.as_deref())).collect();
-    let external_language = wordcraft_proof::external::signature(&wordcraft_proof::external::language_spans(&text, &tagged, wordcraft_proof::external::wanted));
+    let external_language =
+        wordcraft_proof::external::signature(&wordcraft_proof::external::language_spans(&text, &tagged, wordcraft_proof::external::wanted));
     if let Some(found) = wordcraft_proof::check_external(&text, &external_language) {
         let lang_at = |at: usize| spans.iter().find(|(r, _)| r.contains(&at)).map(|(_, l)| *l).unwrap_or_default();
         return found
