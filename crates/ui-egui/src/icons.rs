@@ -506,11 +506,17 @@ impl Pen<'_> {
 }
 
 /// Paint icon `name` into `r`. `c` is the line colour, `accent` the detail colour; status colours
-/// come from the theme unless the icon is disabled (`c == accent`).
+/// come from the theme unless the icon is disabled (`c == accent`). Callers that know their state
+/// (a colour swatch may equal the line colour while enabled) use [`paint_state`].
 pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
+    paint_state(p, r, name, c, accent, c == accent || accent.a() == 0);
+}
+
+/// [`paint`] with the disabled state given, not guessed from the colours.
+pub fn paint_state(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32, disabled: bool) {
     let side = r.width().min(r.height());
     let s = side / 16.0;
-    let disabled = c == accent || accent.a() == 0;
+    let disabled = disabled || accent.a() == 0;
     let a = if accent.a() == 0 { c } else { accent };
     let tokens = crate::theme::Tokens::get(p.ctx());
     let tint = if disabled { Color32::TRANSPARENT } else { a.gamma_multiply(if tokens.dark { 0.28 } else { 0.16 }) };

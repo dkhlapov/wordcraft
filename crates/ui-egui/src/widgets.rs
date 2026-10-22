@@ -254,7 +254,7 @@ fn big_button(ui: &mut Ui, app: &mut WordApp, icon: &str, label: &str, id: &str,
     bg(ui, r, &resp, checked, &t);
     let ic = Rect::from_center_size(pos2(r.center().x, r.min.y + BIG_ICON_Y), vec2(32.0, 32.0));
     let (c, a) = if on { (t.icon, t.accent) } else { (t.text_disabled, t.text_disabled) };
-    icons::paint(ui.painter(), ic, icon, c, a);
+    icons::paint_state(ui.painter(), ic, icon, c, a, !on);
     let mut y = r.min.y + BIG_LABEL_Y;
     let lines: Vec<&str> = label.split('\n').collect();
     for (i, l) in lines.iter().enumerate() {
@@ -282,7 +282,7 @@ pub fn small(ui: &mut Ui, app: &mut WordApp, icon: &str, label: Option<&str>, ti
     bg(ui, r, &resp, checked, &t);
     let ic = Rect::from_center_size(pos2(r.min.x + 12.0, r.center().y), vec2(16.0, 16.0));
     let (c, a) = if on { (t.icon, t.accent) } else { (t.text_disabled, t.text_disabled) };
-    icons::paint(ui.painter(), ic, icon, c, a);
+    icons::paint_state(ui.painter(), ic, icon, c, a, !on);
     if let Some(l) = label {
         ui.painter().text(pos2(r.min.x + 24.0, r.center().y), Align2::LEFT_CENTER, l, regular(11.5), if on { t.text } else { t.text_disabled });
     }
@@ -323,7 +323,7 @@ pub fn split(
     bg(ui, ar, &aresp, false, &t);
     let ic = Rect::from_center_size(r.center(), vec2(16.0, 16.0));
     let (c, a) = split_colors(on, swatch, &t);
-    icons::paint(ui.painter(), ic, icon, c, a);
+    icons::paint_state(ui.painter(), ic, icon, c, a, !on);
     icons::paint(ui.painter(), Rect::from_center_size(ar.center(), vec2(DROPDOWN, DROPDOWN)), "dropdown", c, c);
     let resp = tooltip(app, resp, tip, id);
     command_menu(&resp, app, id);
