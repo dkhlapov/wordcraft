@@ -2465,7 +2465,10 @@ fn layout_pass(
             .fields
             .notes
             .iter()
-            .filter(|(id, _)| doc.parts.get(id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Endnote) && (!folded_notes.contains(*id) || visible_notes.contains(*id)))
+            .filter(|(id, _)| {
+                doc.parts.get(id).is_some_and(|p| p.kind == wordcraft_doc::PartKind::Endnote)
+                    && (!folded_notes.contains(*id) || visible_notes.contains(*id))
+            })
             .map(|(id, n)| (n.order, *id, n.section))
             .collect();
         ids.sort();
