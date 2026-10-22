@@ -490,7 +490,7 @@ impl WordApp {
                 .ok()
                 .filter(|n| !wordcraft_engine::cmd::themes::is_builtin(n))
                 .unwrap_or_else(|| "Theme1".into());
-            FileDialogRequest::Save { name: format!("{name}.thmx") }
+            FileDialogRequest::Save { name: format!("{name}.thmx"), dir: None }
         } else {
             FileDialogRequest::Open { purpose: "theme".into() }
         };

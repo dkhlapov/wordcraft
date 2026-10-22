@@ -2599,3 +2599,27 @@ preview	Title	Titel
 	Full Screen View	Full Screen View
 	Personal Templates	Personal Templates
 	Underline Color	Underline Color
+# Custom theme colours, fonts and themes (#1869)
+	Customize Colors	Tilpas farver
+	Customize Fonts	Tilpas skrifttyper
+	Save Current Theme	Gem aktuelt tema
+	Browse for Themes	Find temaer
+	Customize Colors…	Tilpas farver…
+	Customize Fonts…	Tilpas skrifttyper…
+	Save Current Theme…	Gem aktuelt tema…
+	Browse for Themes…	Find temaer…
+	Theme colors	Theme colors
+	Text/Background - Dark 1	Text/Background - Dark 1
+	Text/Background - Light 1	Text/Background - Light 1
+	Text/Background - Dark 2	Text/Background - Dark 2
+	Text/Background - Light 2	Text/Background - Light 2
+	Followed Hyperlink	Followed Hyperlink
+	Sample	Sample
+	Heading font:	Heading font:
+	Body font:	Body font:
+	Theme files	Theme files
+	Theme files can't be opened or saved in the browser.	Theme files can't be opened or saved in the browser.
+	Custom theme settings could not be saved.	Custom theme settings could not be saved.
+	Custom {n}	Custom {n}
+	Dot-dot-dash	Dot-dot-dash
+	More Underlines…	More Underlines…

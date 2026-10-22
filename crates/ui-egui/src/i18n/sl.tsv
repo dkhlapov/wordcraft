@@ -2763,3 +2763,25 @@ preview	Title	Naslov
 	{names} and {n} more	{names} and {n} more
 	{name} options	{name} options
 	{width} × {height} pixels	{width} × {height} pixels
+# Custom theme colours, fonts and themes (#1869)
+	Customize Colors	Prilagodi barve
+	Customize Fonts	Prilagodi pisave
+	Save Current Theme	Shrani trenutno temo
+	Browse for Themes	Poišči teme
+	Customize Colors…	Prilagodi barve…
+	Customize Fonts…	Prilagodi pisave…
+	Save Current Theme…	Shrani trenutno temo…
+	Browse for Themes…	Poišči teme…
+	Theme colors	Theme colors
+	Text/Background - Dark 1	Text/Background - Dark 1
+	Text/Background - Light 1	Text/Background - Light 1
+	Text/Background - Dark 2	Text/Background - Dark 2
+	Text/Background - Light 2	Text/Background - Light 2
+	Followed Hyperlink	Followed Hyperlink
+	Sample	Sample
+	Heading font:	Heading font:
+	Body font:	Body font:
+	Theme files	Theme files
+	Theme files can't be opened or saved in the browser.	Theme files can't be opened or saved in the browser.
+	Custom theme settings could not be saved.	Custom theme settings could not be saved.
+	Custom {n}	Custom {n}

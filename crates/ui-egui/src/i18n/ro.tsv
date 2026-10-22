@@ -2762,3 +2762,25 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+# Custom theme colours, fonts and themes (#1869)
+	Customize Colors	Personalizare culori
+	Customize Fonts	Personalizare fonturi
+	Save Current Theme	Salvare temă curentă
+	Browse for Themes	Căutare teme
+	Customize Colors…	Personalizare culori…
+	Customize Fonts…	Personalizare fonturi…
+	Save Current Theme…	Salvare temă curentă…
+	Browse for Themes…	Căutare teme…
+	Theme colors	Theme colors
+	Text/Background - Dark 1	Text/Background - Dark 1
+	Text/Background - Light 1	Text/Background - Light 1
+	Text/Background - Dark 2	Text/Background - Dark 2
+	Text/Background - Light 2	Text/Background - Light 2
+	Followed Hyperlink	Followed Hyperlink
+	Sample	Sample
+	Heading font:	Heading font:
+	Body font:	Body font:
+	Theme files	Theme files
+	Theme files can't be opened or saved in the browser.	Theme files can't be opened or saved in the browser.
+	Custom theme settings could not be saved.	Custom theme settings could not be saved.
+	Custom {n}	Custom {n}
