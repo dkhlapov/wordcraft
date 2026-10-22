@@ -2245,6 +2245,9 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             first_page,
         } => {
             // A booklet is printed on a landscape sheet, and the margins then read inside/outside.
+            // The mode as this frame started: the combo below may change `multiple` mid-frame, and
+            // that change is the entry into Book fold the next frame has to see.
+            let multiple_at_start = *multiple;
             let book = *multiple == MultiplePages::BookFold;
             // Only the frame that switches to Book fold turns the page and margins; after that the
             // orientation stays locked, so editing the paper size can't rotate the margins again.
@@ -2311,7 +2314,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             if book {
                 *landscape = true;
             }
-            *multiple_prev = *multiple;
+            *multiple_prev = multiple_at_start;
             ui.label(egui::RichText::new(tl!("Document Grid")).font(semibold(12.5)));
             ui.horizontal_wrapped(|ui| {
                 ui.radio_value(&mut grid.0, 0, tl!("No grid"));
@@ -5123,6 +5126,33 @@ mod tests {
         h.get(egui_kittest::kittest::By::new().label_contains("More Paper Sizes…")).click();
         h.run_steps(2);
         assert_eq!(h.state().dialog.as_ref().map(|d| d.name()), Some("pageSetup"));
+    }
+
+    /// The real UI path: picking Book fold in the combo box (not assigning the field between
+    /// frames) still turns the margins once, on the next frame.
+    #[test]
+    fn page_setup_book_fold_chosen_in_the_combo_rotates_margins() {
+        use egui_kittest::kittest::Queryable;
+        use wordcraft_doc::section::MultiplePages;
+        let mut h = app_harness(app_with("Page"));
+        h.state_mut().run("ui.dialog", json!({"name": "pageSetup"})).unwrap();
+        h.run_steps(2);
+        if let Some(Dialog::PageSetup { top, bottom, left, right, .. }) = h.state_mut().dialog.as_mut() {
+            (*top, *bottom, *left, *right) = (1.0, 2.0, 3.0, 4.0);
+        }
+        h.run_steps(2);
+        h.get_by_label("Multiple pages:").click();
+        h.run_steps(6);
+        h.get_by_label("Book fold").click();
+        h.run_steps(4);
+        match &h.state().dialog {
+            Some(Dialog::PageSetup { top, bottom, left, right, multiple, landscape, .. }) => {
+                assert_eq!(*multiple, MultiplePages::BookFold);
+                assert!(*landscape);
+                assert_eq!((*top, *bottom, *left, *right), (3.0, 4.0, 2.0, 1.0), "turned once");
+            }
+            _ => panic!("open"),
+        }
     }
 
     /// Switching to Book fold turns the margins once; editing the paper size afterwards leaves the
