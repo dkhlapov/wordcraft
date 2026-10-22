@@ -10698,6 +10698,14 @@ fn mixed_language_paragraph_takes_the_external_result_after_it_arrives() {
     let fr = text.find("bonjour").unwrap();
     d.format_range(&Pos::body(0, 0), &Pos::body(0, fr), &|c| c.lang = Some("en-US".into())).unwrap();
     d.format_range(&Pos::body(0, fr), &Pos::body(0, text.len()), &|c| c.lang = Some("fr-FR".into())).unwrap();
+    /// Puts the process-wide language setting back to its default, even when the test panics.
+    struct ResetMode;
+    impl Drop for ResetMode {
+        fn drop(&mut self) {
+            wordcraft_proof::external::set_mode("auto");
+        }
+    }
+    let _reset = ResetMode;
     wordcraft_proof::external::set_mode("document");
     let p = d.para(StoryRef::Body, &Path::top(0)).unwrap();
     let language = para::external_language(&d, p, None);
@@ -10719,6 +10727,5 @@ fn mixed_language_paragraph_takes_the_external_result_after_it_arrives() {
     };
     wordcraft_proof::external::put(text, &language, vec![issue]);
     let after = issues(&layout(&d, &mut c, &opts));
-    wordcraft_proof::external::set_mode("auto");
     assert_eq!(after, vec![(0, 5, false)]);
 }
