@@ -519,6 +519,11 @@ pub fn paint_state(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32
     let tokens = crate::theme::Tokens::get(p.ctx());
     let tint = if disabled { Color32::TRANSPARENT } else { a.gamma_multiply(if tokens.dark { 0.28 } else { 0.16 }) };
     let pen = Pen { p, o: r.center() - vec2(8.0 * s, 8.0 * s), s, w: stroke_px(side), c, a, t: tint };
+    if let Some(kind) = name.strip_prefix("shape.")
+        && shape(&pen, kind)
+    {
+        return;
+    }
     let (green, red, orange) = if disabled { (c, c, c) } else { (tokens.green, tokens.red, tokens.orange) };
     draw(&pen, name, c, a, green, red, orange);
 }
@@ -1950,6 +1955,32 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
                 pen.head(6.75, 11.75, 0.0, a);
             }
         }
+        // File (Backstage) side menu (#1714). Save As: Save's tray and arrow, a pencil beside it.
+        "saveAs" => {
+            pen.line(&[(1.5, 9.5), (1.5, 13.5), (2.5, 14.5), (13.5, 14.5), (14.5, 13.5), (14.5, 9.5)]);
+            pen.arrow(5.0, 1.5, 5.0, 10.5, a);
+            pen.pencil(7.0, 0.0, 0.55, a);
+        }
+        // Export: a page with an arrow leaving it.
+        "export" => {
+            pen.page_h(1.5, 2.0, 12.0);
+            pen.arrow(7.0, 10.0, 14.5, 10.0, a);
+        }
+        // Options: a gear.
+        "options" => {
+            for k in 0..8 {
+                let t = k as f32 * 45.0;
+                let at = |r: f32, dt: f32| (8.0 + r * (t + dt).to_radians().cos(), 8.0 + r * (t + dt).to_radians().sin());
+                pen.fill(&[at(4.0, -16.0), at(6.5, -10.0), at(6.5, 10.0), at(4.0, 16.0)], c);
+            }
+            pen.disc(8.0, 8.0, 4.5);
+            pen.dot(8.0, 8.0, 1.75, a);
+        }
+        // Recover: a page with a turning arrow, a copy brought back.
+        "recover" => {
+            pen.page_h(1.5, 1.5, 11.0);
+            pen.cycle(11.25, 11.25, 3.0, a);
+        }
         // Developer › Controls: a field's frame with what it holds.
         "ccRichText" => {
             pen.rect_c(1.5, 3.0, 14.5, 13.0, 1.0, a);
@@ -2189,6 +2220,85 @@ fn dashes(pen: &Pen, y: f32) {
     for (x0, x1) in [(1.5, 3.5), (7.0, 9.0), (12.5, 14.5)] {
         pen.acc(&[(x0, y), (x1, y)]);
     }
+}
+
+/// The Insert › Shapes menu's icons: each shape kind (`insert.shape` ids) as a small outline,
+/// tinted inside like the other icons; connectors show their end points and arrow heads.
+fn shape(pen: &Pen, kind: &str) -> bool {
+    let (c, a) = (pen.c, pen.a);
+    let solid = |pts: &[(f32, f32)]| {
+        pen.fill(pts, pen.t);
+        pen.poly(pts, c);
+    };
+    // A connector: its path, a dot at the start and a dot or an arrow head at the end.
+    let ends = |pts: &[(f32, f32)], arrow: bool| {
+        pen.line(pts);
+        if let Some(&(x, y)) = pts.first() {
+            pen.dot(x, y, 1.25, a);
+        }
+        if let [.., from, tip] = pts {
+            if arrow {
+                pen.head(tip.0, tip.1, (tip.1 - from.1).atan2(tip.0 - from.0).to_degrees(), c);
+            } else {
+                pen.dot(tip.0, tip.1, 1.25, a);
+            }
+        }
+    };
+    let curve = || -> Vec<(f32, f32)> {
+        let (p0, p1, p2, p3) = ((3.0, 12.0), (9.5, 12.0), (6.5, 4.0), (13.0, 4.0));
+        (0..=16)
+            .map(|i| {
+                let t = i as f32 / 16.0;
+                let m = 1.0 - t;
+                let w = [m * m * m, 3.0 * m * m * t, 3.0 * m * t * t, t * t * t];
+                (w[0] * p0.0 + w[1] * p1.0 + w[2] * p2.0 + w[3] * p3.0, w[0] * p0.1 + w[1] * p1.1 + w[2] * p2.1 + w[3] * p3.1)
+            })
+            .collect()
+    };
+    match kind {
+        "rectangle" => solid(&[(2.5, 4.0), (13.5, 4.0), (13.5, 12.0), (2.5, 12.0)]),
+        "roundedRectangle" => pen.panel(2.5, 4.0, 13.5, 12.0, 2.5),
+        "ellipse" => {
+            let (center, radius) = (pen.pt(8.0, 8.0), vec2(6.0, 4.5) * pen.s);
+            pen.p.add(Shape::ellipse_filled(center, radius, pen.t));
+            pen.p.add(Shape::ellipse_stroke(center, radius, Stroke::new(pen.w, c)));
+        }
+        "triangle" => solid(&[(8.0, 2.5), (14.0, 13.0), (2.0, 13.0)]),
+        "diamond" => solid(&[(8.0, 2.0), (14.0, 8.0), (8.0, 14.0), (2.0, 8.0)]),
+        "line" => pen.line(&[(3.0, 13.0), (13.0, 3.0)]),
+        "arrow" => pen.arrow(3.0, 13.0, 13.0, 3.0, c),
+        "star" => {
+            let pts: Vec<(f32, f32)> = (0..10)
+                .map(|i| {
+                    let t = (-90.0 + i as f32 * 36.0).to_radians();
+                    let r = if i % 2 == 0 { 6.5 } else { 2.7 };
+                    (8.0 + r * t.cos(), 8.6 + r * t.sin())
+                })
+                .collect();
+            // Concave: the tinted core, then the outline with crisp points.
+            pen.fill(&pts.iter().skip(1).step_by(2).copied().collect::<Vec<_>>(), pen.t);
+            pen.p.add(Shape::closed_line(pen.pts(&round_corners(&pts, true, TIP)), Stroke::new(pen.w, c)));
+        }
+        "heart" => {
+            let pts: Vec<(f32, f32)> = (0..32)
+                .map(|i| {
+                    let t = i as f32 / 32.0 * std::f32::consts::TAU;
+                    let x = 16.0 * t.sin().powi(3);
+                    let y = 13.0 * t.cos() - 5.0 * (2.0 * t).cos() - 2.0 * (3.0 * t).cos() - (4.0 * t).cos();
+                    (8.0 + x * 0.36, 7.7 - y * 0.36)
+                })
+                .collect();
+            pen.poly(&pts, c);
+        }
+        "straightConnector" => ends(&[(3.0, 12.0), (13.0, 4.0)], false),
+        "straightArrowConnector" => ends(&[(3.0, 12.0), (13.0, 4.0)], true),
+        "elbowConnector" => ends(&[(3.0, 12.0), (8.0, 12.0), (8.0, 4.0), (13.0, 4.0)], false),
+        "elbowArrowConnector" => ends(&[(3.0, 12.0), (8.0, 12.0), (8.0, 4.0), (13.0, 4.0)], true),
+        "curvedConnector" => ends(&curve(), false),
+        "curvedArrowConnector" => ends(&curve(), true),
+        _ => return false,
+    }
+    true
 }
 
 /// Field brackets across the icon from `y0` to `y1` (mail merge fields).
@@ -2526,6 +2636,25 @@ pub const NAMES: &[&str] = &[
     "folder",
     "file",
     "homeFolder",
+    "recover",
+    "saveAs",
+    "export",
+    "options",
+    "shape.rectangle",
+    "shape.roundedRectangle",
+    "shape.ellipse",
+    "shape.triangle",
+    "shape.diamond",
+    "shape.line",
+    "shape.arrow",
+    "shape.star",
+    "shape.heart",
+    "shape.straightConnector",
+    "shape.straightArrowConnector",
+    "shape.elbowConnector",
+    "shape.elbowArrowConnector",
+    "shape.curvedConnector",
+    "shape.curvedArrowConnector",
 ];
 
 /// Names that are deliberately the same drawing as another (aliases of one command or one idea).
