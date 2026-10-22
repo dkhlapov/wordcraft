@@ -1090,8 +1090,16 @@ fn rotated_group_tags_each_picture_on_its_own() {
     use wordcraft_doc::para::{AltText, Float, GroupChild};
     let mut d = Document::new();
     let media = d.add_media(red_right_half_emf(), "emf");
-    let picture =
-        |alt: &str, float: Float| InlineObject::Image { media: media.clone(), w: 70.0, h: 70.0, alt: alt.into(), float, crop: [0.0; 4], ole: None, shape: None };
+    let picture = |alt: &str, float: Float| InlineObject::Image {
+        media: media.clone(),
+        w: 70.0,
+        h: 70.0,
+        alt: alt.into(),
+        float,
+        crop: [0.0; 4],
+        ole: None,
+        shape: None,
+    };
     let decorative = Float { alt: AltText { decorative: true, ..Default::default() }, ..Default::default() };
     let group = InlineObject::Group {
         w: 160.0,
