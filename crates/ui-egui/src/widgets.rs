@@ -286,8 +286,11 @@ fn big_button(
 }
 
 /// The highlight split's colour bar: the highlight `last` (an OOXML highlight name) applies, if
-/// it is one.
+/// it is one. "No Color" has no bar at all (a transparent swatch), not the accent.
 pub fn highlight_swatch(last: &str) -> Option<Color32> {
+    if last == "none" {
+        return Some(Color32::TRANSPARENT);
+    }
     wordcraft_doc::props::Highlight::ALL.iter().find(|h| h.ooxml() == last).and_then(|h| h.rgb()).map(crate::theme::c32)
 }
 
@@ -1348,6 +1351,7 @@ mod tests {
         assert_eq!(highlight_swatch("yellow"), Some(Color32::from_rgb(255, 255, 0)));
         assert_ne!(highlight_swatch("green"), highlight_swatch("yellow"));
         assert_eq!(highlight_swatch("no such colour"), None);
+        assert_eq!(highlight_swatch("none"), Some(Color32::TRANSPARENT));
     }
 
     /// #1282: the arrow of a disabled split button doesn't open its menu.
