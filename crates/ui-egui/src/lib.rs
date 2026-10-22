@@ -960,6 +960,11 @@ impl WordApp {
         if self.lt_key.stored.as_deref() == Some(key.as_str()) {
             return false;
         }
+        // A longer key would be read back as lost on the next start, so it stays in ui.json.
+        if key.len() > secrets::MAX_SECRET_LEN {
+            self.lt_key.error = Some(LtKeyError::Store("the key is too long for the credential store".into()));
+            return false;
+        }
         match store.set(secrets::LANGUAGE_TOOL_KEY, key) {
             Ok(()) => {
                 self.lt_key = LtKeyPlace { stored: Some(key.clone()), unread: false, error: None };

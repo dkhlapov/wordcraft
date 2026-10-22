@@ -181,6 +181,25 @@ mod tests {
     }
 
     #[test]
+    fn a_key_too_long_for_the_store_stays_in_ui_json() {
+        let store = MemoryStore::default();
+        let mut a = app(Some(&store));
+        load(&mut a, "{}");
+        let long = "k".repeat(MAX_SECRET_LEN + 1);
+        a.run("ui.languageTool", json!({"apiKey": long})).unwrap();
+        assert!(!a.sync_secrets(), "an over-long key isn't written to the store");
+        assert!(store.secrets.borrow().is_empty());
+        let json = saved(&a);
+        assert!(json.contains(&long), "the key stays in ui.json, or the next start would lose it");
+        assert!(json.contains(r#""languageToolKeyInStore": false"#), "{json}");
+        assert!(matches!(&a.lt_key.error, Some(crate::LtKeyError::Store(e)) if e.contains("too long")));
+        // The longest key a store read accepts still goes in.
+        a.run("ui.languageTool", json!({"apiKey": "k".repeat(MAX_SECRET_LEN)})).unwrap();
+        assert!(a.sync_secrets());
+        assert!(a.lt_key.error.is_none());
+    }
+
+    #[test]
     fn a_store_that_cannot_be_read_keeps_pointing_at_the_key() {
         let store = MemoryStore::default();
         store.secrets.borrow_mut().insert(LANGUAGE_TOOL_KEY.into(), "SECRET-764".into());
