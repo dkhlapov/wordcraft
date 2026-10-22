@@ -4759,7 +4759,7 @@ mod tests {
         let doc = app.session.doc.sections().iter().map(|(_, x)| (*x).clone()).collect::<Vec<_>>();
         let depth = app.session.undo_depth();
         let mut h = app_harness(app);
-        page_setup_ok(&mut h, (300.0, 500.0), (72.0, 72.0, 72.0, 72.0));
+        page_setup_ok(&mut h, (4.0, 7.0), (72.0, 72.0, 72.0, 72.0));
         assert!(
             matches!(&h.state().dialog, Some(Dialog::PageSetup { message, .. }) if message.contains("margins don't fit")),
             "stays open with the error"
@@ -4801,11 +4801,11 @@ mod tests {
         let turned = margins(&h);
         assert_eq!(turned, (3.0, 4.0, 2.0, 1.0), "turned once on entry");
         if let Some(Dialog::PageSetup { paper, .. }) = h.state_mut().dialog.as_mut() {
-            *paper = (300.0, 500.0);
+            *paper = (4.0, 7.0);
         }
         h.run_steps(4);
         assert_eq!(margins(&h), turned, "later frames leave the margins alone");
-        assert!(matches!(&h.state().dialog, Some(Dialog::PageSetup { landscape: true, paper: (300.0, 500.0), .. })));
+        assert!(matches!(&h.state().dialog, Some(Dialog::PageSetup { landscape: true, paper: (4.0, 7.0), .. })));
     }
 
     /// #1836: Page Setup's Multiple pages list shows the document's mode, labels the margins
