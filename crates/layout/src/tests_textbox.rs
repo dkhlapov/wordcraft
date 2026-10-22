@@ -324,7 +324,7 @@ fn a_turned_box_shape_draws_the_same_alone_as_on_the_page() {
     turned_box(&mut d, 30.0, false, false);
     if let Some(InlineObject::Shape { effects, fill, stroke, .. }) = d.para_mut(StoryRef::Body, &Path::top(0)).unwrap().objects.first_mut() {
         effects.shadow = Some(wordcraft_doc::effects::Shadow { distance: 8.0, angle: 0.0, ..Default::default() });
-        *fill = Some(wordcraft_doc::props::Rgb(0, 0, 255));
+        *fill = Some(wordcraft_doc::fill::Fill::solid(wordcraft_doc::props::Rgb(0, 0, 255)));
         *stroke = Some(wordcraft_doc::props::Rgb::BLACK);
     }
     let l = lay(&d);
@@ -374,3 +374,34 @@ fn a_link_in_a_rotated_text_box_gets_no_link_area_but_an_upright_box_keeps_it() 
         assert_eq!(!links.is_empty(), linked, "turn {deg}: {links:?}");
     }
 }
+#[test]
+fn inline_box_that_resizes_to_fit_takes_its_texts_height() {
+    // #2791: an inline box with Resize shape to fit text, saved 10 cm tall around three short
+    // lines, shrinks to them as in Word; the page break after it stays on the first page.
+    let brk = wordcraft_doc::para::PAGE_BREAK;
+    let doc = |auto_fit: bool| {
+        let filler: Vec<String> = (1..=FILLER).map(|i| format!("Filler line {i}")).collect();
+        let mut d = Document::from_text(&format!("{}\n\n\n{brk}\nSecond page text.", filler.join("\n")));
+        let id = text_box(&mut d, FILLER, "", 453.5, 283.46, TextBody { auto_fit, anchor: VAlign::Center, ..Default::default() });
+        d.parts.get_mut(&id).unwrap().blocks =
+            (1..=3).map(|i| para_block(Paragraph::with_text(&format!("Text box line {i}"), Default::default()))).collect();
+        let l = lay(&d);
+        let r = l.pages.iter().find_map(|p| {
+            p.items.iter().find_map(|it| match it {
+                Placed::Object { rect, text_box: Some(s), .. } if *s == id => Some(*rect),
+                _ => None,
+            })
+        });
+        (l.pages.len(), r.unwrap())
+    };
+    let (pages, r) = doc(true);
+    assert!(r.h > 3.0 * 12.0 && r.h < 80.0, "the box fits its three lines: {r:?}");
+    assert_eq!(pages, 2, "the page break stays on the first page");
+    let (pages, saved) = doc(false);
+    assert_eq!(pages, 3, "a box keeping its 10 cm pushes the page break over");
+    assert!((saved.h - 283.46).abs() < 1.0, "without auto-fit the box keeps its saved height: {saved:?}");
+}
+
+/// Filler paragraphs before the box in [`inline_box_that_resizes_to_fit_takes_its_texts_height`]:
+/// enough that a 10 cm box no longer leaves room for the page break on the first page.
+const FILLER: usize = 22;
