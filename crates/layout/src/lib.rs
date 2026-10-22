@@ -2461,7 +2461,7 @@ fn layout_pass(
     let mut prev_turn = TextDirection::Horizontal;
     // Incremental pagination: resume from the page the edit is on (see `incremental`).
     // A repeat pass for page totals (`NUMPAGES`) lays out with other totals: never resume across them.
-    let key = incremental::PassKey::new(doc, opts, env, notes_hash ^ hash_of(&(totals.pages, &totals.sections)));
+    let key = incremental::PassKey::new(doc, opts, env, notes_hash ^ hash_of(&(totals.pages, &totals.sections)) ^ early_hash(early));
     let prev = ctx.cache.pass.take();
     // Balanced columns and endnotes at section ends re-lay or add pages behind the walk: those
     // documents are paginated in full.
@@ -3258,6 +3258,16 @@ type WrapArea = (Rect, bool, Option<Arc<contour::Contour>>, WrapText);
 /// their areas. Layout places a float only when it reaches its anchor, so the text above that
 /// was laid out without it: the pass is done again with these known from the page's start.
 type EarlyFloats = HashMap<usize, Vec<(usize, usize, WrapArea)>>;
+
+/// The early floats a pass starts with, as a number: a pass laid out with others can't be resumed.
+fn early_hash(early: &EarlyFloats) -> u64 {
+    if early.is_empty() {
+        return 0;
+    }
+    let mut pages: Vec<_> = early.iter().collect();
+    pages.sort_by_key(|(page, _)| **page);
+    hash_of(&format!("{pages:?}"))
+}
 
 /// Layout passes made again at most for [`EarlyFloats`] (a float moving with the text it pushes
 /// down may move again). The pass after the last one keeps each float clear of the text laid
