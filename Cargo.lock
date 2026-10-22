@@ -5573,7 +5573,7 @@ dependencies = [
 
 [[package]]
 name = "wordcraft-svg"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "imagesize",
  "resvg",
