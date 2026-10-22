@@ -2762,3 +2762,19 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+	API key:	Cheie API:
+	Check spelling and grammar with LanguageTool	Verifică ortografia și gramatica cu LanguageTool
+	Detect automatically	Detectează automat
+	Each paragraph's proofing language	Limba de verificare a fiecărui paragraf
+	Language:	Limbă:
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Verificarea cu LanguageTool necesită aplicația desktop; versiunea din browser nu poate trimite încă text către un server de verificare.
+	Paragraphs checked: {count}	Paragrafe verificate: {count}
+	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Trimite textul paragrafelor tale către serverul LanguageTool de mai jos. Dezactivat, se folosește verificatorul încorporat WordCraft și nimic nu părăsește acest computer.
+	Server:	Server:
+	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Folosește propriul server LanguageTool introducând adresa lui, de exemplu http://localhost:8081.
+	Username:	Nume de utilizator:
+	This system has no credential store, so the API key is saved in WordCraft's settings file.	Acest sistem nu are un depozit de credențiale, deci cheia API este salvată în fișierul de setări WordCraft.
+	The system's credential store could not keep the API key ({error}), so it is saved in WordCraft's settings file.	Depozitul de credențiale al sistemului nu a putut păstra cheia API ({error}), deci este salvată în fișierul de setări WordCraft.
+	The API key is kept in the system's credential store.	Cheia API este păstrată în depozitul de credențiale al sistemului.
+	The system's credential store no longer has the API key. Enter it again to keep checking with LanguageTool.	Depozitul de credențiale al sistemului nu mai are cheia API. Introdu-o din nou pentru a continua verificarea cu LanguageTool.
+	The old API key is still in the system's credential store: it could not be removed ({error}).	Vechea cheie API este încă în depozitul de credențiale al sistemului: nu a putut fi eliminată ({error}).
