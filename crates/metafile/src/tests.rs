@@ -907,7 +907,7 @@ fn crop_window_keeps_a_sliver_and_stays_finite() {
         let [x, y, w, h] = crate::crop_window(c);
         assert!([x, y, w, h].iter().all(|v| v.is_finite()) && w > 0.0 && h > 0.0, "{c:?}");
         // Only a negative side (padding) lets the window reach past the source.
-        if c.iter().all(|v| !(*v < 0.0)) {
+        if c.iter().all(|v| v.is_nan() || *v >= 0.0) {
             assert!(x >= 0.0 && y >= 0.0 && x + w <= 1.0 + 1e-9 && y + h <= 1.0 + 1e-9, "{c:?}");
         }
     }
