@@ -2762,3 +2762,24 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+# LanguageTool proofing (#575, #1283)
+	Check spelling and grammar with LanguageTool	Verifică ortografia și gramatica cu LanguageTool
+	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Trimite textul paragrafelor tale la serverul LanguageTool de mai jos. Dezactivat, se folosește verificatorul încorporat WordCraft și nimic nu părăsește acest calculator.
+	Server:	Server:
+	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Folosește propriul server LanguageTool introducând adresa lui, de exemplu http://localhost:8081.
+	Username:	Nume de utilizator:
+	API key:	Cheie API:
+	Detect automatically	Detectează automat
+	Each paragraph's proofing language	Limba de verificare a fiecărui paragraf
+	Language:	Limba:
+	Paragraphs checked: {count}	Paragrafe verificate: {count}
+	LanguageTool checking needs the desktop app; the browser version can't send text to a checking server yet.	Verificarea cu LanguageTool necesită aplicația desktop; versiunea din browser nu poate trimite încă text către un server de verificare.
+	The LanguageTool server address isn't a web address: {address}	Adresa serverului LanguageTool nu este o adresă web: {address}
+	A paragraph is too long to check ({bytes} bytes; at most {max}).	Un paragraf este prea lung pentru a fi verificat ({bytes} octeți; cel mult {max}).
+	Couldn't reach the LanguageTool server: {reason}	Nu s-a putut contacta serverul LanguageTool: {reason}
+	The LanguageTool server didn't answer in time.	Serverul LanguageTool nu a răspuns la timp.
+	The LanguageTool server is limiting requests; checking resumes in a minute.	Serverul LanguageTool limitează cererile; verificarea reia într-un minut.
+	The LanguageTool server answered {status}: {message}	Serverul LanguageTool a răspuns {status}: {message}
+	Unexpected answer from the LanguageTool server: {reason}	Răspuns neașteptat de la serverul LanguageTool: {reason}
+	The username and API key are only sent over https:// or to this computer. Use an https:// server address.	Numele de utilizator și cheia API se trimit doar prin https:// sau către acest calculator. Folosește o adresă de server https://.
+	Changes to these fields apply when you press Enter or leave the field.	Modificările acestor câmpuri se aplică când apeși Enter sau părăsești câmpul.
