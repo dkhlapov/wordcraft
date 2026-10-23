@@ -884,7 +884,7 @@ fn para_issues(s: &Session, story: StoryRef, path: &wordcraft_doc::Path) -> Vec<
     wordcraft_layout::para::paragraph_issues(
         p,
         &runs,
-        &wordcraft_layout::para::language_key(&runs),
+        &wordcraft_layout::para::external_language(&s.doc, p),
         &s.prefs.spelling(),
         true,
         wordcraft_layout::para::is_list_item(&s.doc, p),

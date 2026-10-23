@@ -19,7 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use serde_json::{Value, json};
-use wordcraft_engine::doc::{StoryRef, props::CharProps};
+use wordcraft_engine::doc::StoryRef;
 use wordcraft_languagetool::{Job, LtError, Settings, Worker, http, request};
 
 use crate::WordApp;
@@ -43,9 +43,10 @@ pub struct LtLink {
     settings: Option<Settings>,
     /// The paragraph text being checked.
     in_flight: Option<String>,
-    /// The language key ([`wordcraft_engine::layout::para::language_key`]) of the paragraph being
-    /// checked: results are stored under it, so identical text in another language is separate.
-    job_key: String,
+    /// The key the result of the job in flight is stored under
+    /// ([`wordcraft_engine::layout::para::external_language`]): identical text marked with other
+    /// languages is another result (#2679).
+    job_store: String,
     /// Debounce: the document revision last seen and when it changed.
     seen_rev: u64,
     changed_at: f64,
@@ -80,11 +81,13 @@ impl LtLink {
         self.worker = None;
         self.settings = None;
         self.in_flight = None;
-        self.job_key.clear();
+        self.job_store.clear();
         self.idle_rev = None;
         self.paused_until = 0.0;
         self.stopped = None;
         self.skipped.clear();
+        self.partial.clear();
+        self.partial_in_flight = None;
         self.sent.clear();
         self.checked = 0;
         self.last_error = None;
@@ -306,6 +309,10 @@ fn take_results(app: &mut WordApp, ctx: &egui::Context, now: f64) {
         }
         lt.idle_rev = None;
         let key = (done.language.clone(), done.text.clone());
+        let partial = lt.partial_in_flight.as_ref().is_some_and(|(l, t)| *l == done.language && *t == done.text);
+        if partial {
+            lt.partial_in_flight = None;
+        }
         match done.result {
             // One language of a mixed paragraph waits for the others (`next_job` puts them together).
             Ok(issues) if partial => {
@@ -316,7 +323,7 @@ fn take_results(app: &mut WordApp, ctx: &egui::Context, now: f64) {
                 lt.last_error = None;
             }
             Ok(issues) => {
-                wordcraft_proof::external::put(&done.text, &lt.job_key, &done.language, issues);
+                wordcraft_proof::external::put(&done.text, &lt.job_store, issues);
                 lt.checked = lt.checked.saturating_add(1);
                 lt.last_error = None;
                 changed = true;
@@ -379,7 +386,7 @@ fn language_spans(
         }
     }
     if spans.is_empty() {
-        let plain = CharProps::default();
+        let plain = wordcraft_engine::doc::CharProps::default();
         let lang = doc.styles.resolve_char(p.props.style.as_deref(), &plain).lang;
         spans.push((0..len, settings.language_for(lang.as_deref()), false));
     }
@@ -409,14 +416,24 @@ fn next_job(app: &mut WordApp, settings: &Settings) -> (Option<Job>, bool) {
             continue;
         }
         let text = wordcraft_engine::layout::para::proof_text(p);
-        let plain = CharProps::default();
-        let first = p.run_ranges().next().map(|(_, c)| c).unwrap_or(&plain);
-        let lang = doc.styles.resolve_char(p.props.style.as_deref(), first).lang;
-        let language = settings.language_for(lang.as_deref());
-        // A result in another language (the paragraph's language changed since) is asked for
-        // again (#575 review).
-        let key = (language, text);
-        if wordcraft_proof::external::has(&key.1, &key.0) || lt.skipped.contains(&key) || lt.sent.contains(&key) {
+        let spans = language_spans(doc, p, &text, settings);
+        // The key layout asks the store for: the paragraph's language and, when its runs mix
+        // languages, their tags and ranges (#2679).
+        let store = wordcraft_engine::layout::para::external_language(doc, p);
+        if let [(_, language)] = spans.as_slice() {
+            // A result in another language (the paragraph's language changed since) is asked
+            // for again (#575 review).
+            let key = (language.clone(), text);
+            if wordcraft_proof::external::has(&key.1, &store) || lt.skipped.contains(&key) || lt.sent.contains(&key) {
+                continue;
+            }
+            let (language, text) = key;
+            lt.job_store = store;
+            return (Some(Job { text, language }), stored);
+        }
+        // Mixed languages (#763): the stored result's key names every run's language and range,
+        // so a paragraph whose languages or run boundaries changed is put together again.
+        if wordcraft_proof::external::has(&text, &store) {
             continue;
         }
         let mut languages: Vec<&String> = Vec::new();
@@ -432,7 +449,6 @@ fn next_job(app: &mut WordApp, settings: &Settings) -> (Option<Job>, bool) {
             }
             if !lt.partial.contains_key(&key) {
                 lt.partial_in_flight = Some(key.clone());
-                lt.job_key = pkey;
                 let (language, text) = key;
                 return (Some(Job { text, language }), stored);
             }
@@ -443,7 +459,7 @@ fn next_job(app: &mut WordApp, settings: &Settings) -> (Option<Job>, bool) {
             let Some(found) = lt.partial.remove(&((*l).clone(), text.clone())) else { continue };
             issues.extend(found.into_iter().filter(|i| spans.iter().any(|(r, sl)| sl == *l && r.start <= i.start && i.end <= r.end)));
         }
-        wordcraft_proof::external::put(&text, &pkey, &signature, issues);
+        wordcraft_proof::external::put(&text, &store, issues);
         lt.checked = lt.checked.saturating_add(1);
         stored = true;
     }
@@ -464,15 +480,6 @@ mod tests {
     fn serial() -> std::sync::MutexGuard<'static, ()> {
         static L: Mutex<()> = Mutex::new(());
         L.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    /// The stored result for the first body paragraph, which holds `text`.
-    fn stored(app: &WordApp, text: &str) -> Option<Vec<wordcraft_proof::Issue>> {
-        let doc = &app.session.doc;
-        let path = doc.para_paths(wordcraft_engine::doc::StoryRef::Body).into_iter().next()?;
-        let p = doc.para(wordcraft_engine::doc::StoryRef::Body, &path)?;
-        let key = wordcraft_engine::layout::para::language_key(&wordcraft_engine::layout::para::proof_runs(doc, p, None));
-        wordcraft_proof::external::get(text, &key)
     }
 
     fn app_with(text: &str) -> WordApp {
@@ -552,6 +559,110 @@ mod tests {
         app.run("ui.languageTool", json!({"enabled": false})).unwrap();
         super::poll_at(&mut app, &ctx, t + 5.0);
         assert!(wordcraft_proof::external::is_empty());
+    }
+
+    /// A fake server for #763: in whatever language it's asked, it flags the typos "sayd" and
+    /// "tuot" and every lowercase sentence start (as LanguageTool does), with UTF-16 offsets.
+    /// Requests are logged as (text, language).
+    fn mixed_fake(app: &mut WordApp) -> Arc<Mutex<Vec<(String, String)>>> {
+        let sent = Arc::new(Mutex::new(Vec::<(String, String)>::new()));
+        let log = sent.clone();
+        app.language_tool.fake = Some(Arc::new(move |r: &wordcraft_languagetool::Request| {
+            let f = wordcraft_languagetool::request::fields(&r.body);
+            let get = |k: &str| f.iter().find(|(a, _)| a == k).map(|(_, b)| b.clone()).unwrap_or_default();
+            let t = get("text");
+            log.lock().unwrap().push((t.clone(), get("language")));
+            let u16_at = |b: usize| t[..b].encode_utf16().count();
+            let issue = |b: usize, w: &str, kind: &str| {
+                json!({"offset": u16_at(b), "length": w.encode_utf16().count(), "message": "Flagged", "replacements": [],
+                    "rule": {"issueType": kind, "category": {"id": "X"}}})
+            };
+            let mut matches = Vec::new();
+            let mut b = 0;
+            for w in t.split(' ') {
+                if w == "sayd" || w == "tuot" {
+                    matches.push(issue(b, w, "misspelling"));
+                }
+                let start = b == 0 || t[..b].trim_end().ends_with('.');
+                if start && w.starts_with(|c: char| c.is_lowercase()) {
+                    matches.push(issue(b, w, "grammar"));
+                }
+                b += w.len() + 1;
+            }
+            Ok(json!({ "matches": matches }).to_string())
+        }));
+        sent
+    }
+
+    /// Runs `text` with `french` marked fr-FR through checking; returns the requests and the
+    /// stored issues' (start, end).
+    fn check_mixed(text: &str, french: &str) -> (Vec<(String, String)>, Vec<(usize, usize)>) {
+        let mut app = app_with(text);
+        app.run("select.text", json!({"text": french})).unwrap();
+        app.run("review.language", json!({"lang": "fr-FR"})).unwrap();
+        let sent = mixed_fake(&mut app);
+        app.run("ui.languageTool", json!({"enabled": true, "language": "document"})).unwrap();
+        let ctx = egui::Context::default();
+        let mut t = 0.0;
+        let signature = |app: &WordApp| {
+            let doc = &app.session.doc;
+            let p = doc.para(wordcraft_engine::doc::StoryRef::Body, &doc.para_paths(wordcraft_engine::doc::StoryRef::Body)[0]).unwrap();
+            wordcraft_engine::layout::para::external_language(doc, p)
+        };
+        run_until(&mut app, &ctx, &mut t, |a| wordcraft_proof::external::get(text, &signature(a)).is_some());
+        let issues = wordcraft_proof::external::get(text, &signature(&app)).unwrap().iter().map(|i| (i.start, i.end)).collect();
+        // Done: more frames send nothing.
+        for _ in 0..10 {
+            t += 1.0;
+            super::poll_at(&mut app, &ctx, t);
+        }
+        let mut sent = sent.lock().unwrap().clone();
+        sent.sort();
+        app.run("ui.languageTool", json!({"enabled": false})).unwrap();
+        super::poll_at(&mut app, &ctx, t + 5.0);
+        (sent, issues)
+    }
+
+    /// #763: a paragraph mixing languages is sent whole once per language; each answer's
+    /// issues count only inside that language's runs, at the right bytes past accents and emoji.
+    #[test]
+    fn languagetool_checks_each_run_in_its_language() {
+        let _serial = serial();
+        let text = "Él \u{1F600} sayd bonjour tuot le monde loudly";
+        let (sent, issues) = check_mixed(text, "bonjour tuot le monde");
+        assert_eq!(sent, vec![(text.to_string(), "en-US".to_string()), (text.to_string(), "fr-FR".to_string())]);
+        let at = |w: &str| text.find(w).unwrap();
+        // "sayd" only from the English answer, "tuot" only from the French one.
+        assert_eq!(issues, vec![(at("sayd"), at("sayd") + 4), (at("tuot"), at("tuot") + 4)]);
+    }
+
+    /// #763: the whole sentence is checked in every language, so a run that starts mid-sentence
+    /// gets no "sentence starts lowercase" flag; real sentence starts are flagged once, by the
+    /// language they're in.
+    #[test]
+    fn languagetool_mixed_paragraph_keeps_sentence_context() {
+        let _serial = serial();
+        let text = "It ended. then he said bonjour. tout le monde and left. and so on";
+        let (sent, issues) = check_mixed(text, "bonjour. tout le monde");
+        let at = |w: &str| text.find(w).unwrap();
+        let and = text.rfind("and").unwrap();
+        assert_eq!(issues, vec![(at("then"), at("then") + 4), (at("tout"), at("tout") + 4), (and, and + 3)]);
+        assert_eq!(sent.len(), 2, "{sent:?}");
+    }
+
+    /// #763: a space in another language doesn't split a paragraph; `auto` keeps it whole.
+    #[test]
+    fn language_spans_merge_blank_runs() {
+        let mut app = app_with("Hello world");
+        app.run("select.text", json!({"text": " "})).unwrap();
+        app.run("review.language", json!({"lang": "fr-FR"})).unwrap();
+        let doc = &app.session.doc;
+        let p = doc.para(wordcraft_engine::doc::StoryRef::Body, &doc.para_paths(wordcraft_engine::doc::StoryRef::Body)[0]).unwrap();
+        let text = wordcraft_engine::layout::para::proof_text(p);
+        let mut s = wordcraft_languagetool::Settings { language: "document".into(), ..Default::default() };
+        assert_eq!(super::language_spans(doc, p, &text, &s), vec![(0..11, "en-US".to_string())]);
+        s.language = "auto".into();
+        assert_eq!(super::language_spans(doc, p, &text, &s).len(), 1);
     }
 
     /// #575: failures pause or stop checking with a message instead of retrying in a loop.

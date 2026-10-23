@@ -1727,7 +1727,6 @@ mod tests {
         let issue = |start, end, kind| Issue { start, end, kind, message: "m".into(), suggestions: vec!["x".into()], lang: ProofLang::En };
         external::put(
             text,
-            "",
             "en-US",
             vec![
                 issue(26, 30, IssueKind::Grammar),
@@ -1775,27 +1774,12 @@ mod tests {
         assert_eq!(check(text).iter().map(|i| (i.start, i.end)).collect::<Vec<_>>(), [(4, 10)]);
     }
 
-    /// #2679: the same text under two language keys keeps two results.
-    #[test]
-    fn external_results_are_keyed_by_text_and_language_key() {
-        let text = "Les enfant 2679 jouent.";
-        let issue = |start, end| Issue { start, end, kind: IssueKind::Spelling, message: "m".into(), suggestions: Vec::new(), lang: ProofLang::En };
-        external::put(text, "en-US@0-23", "en-US", vec![issue(4, 10)]);
-        external::put(text, "fr-FR@0-23", "fr-FR", vec![issue(0, 3)]);
-        assert_eq!(check_external(text, "en-US@0-23").map(|v| v.len()), Some(1));
-        assert_eq!(external::get(text, "en-US@0-23").map(|v| v[0].start), Some(4));
-        assert_eq!(external::get(text, "fr-FR@0-23").map(|v| v[0].start), Some(0));
-        assert!(external::has(text, "en-US@0-23", "en-US") && external::has(text, "fr-FR@0-23", "fr-FR"));
-        assert!(external::get(text, "de-DE@0-23").is_none());
-    }
-
     /// #575: a range that cuts a character in two is dropped, never sliced.
     #[test]
     fn external_ranges_off_char_boundaries_are_dropped() {
         let text = "é😀 575 boundaries";
         external::put(
             text,
-            "",
             "en-US",
             vec![Issue { start: 1, end: 3, kind: IssueKind::Grammar, message: String::new(), suggestions: Vec::new(), lang: ProofLang::En }],
         );

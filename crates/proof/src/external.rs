@@ -38,10 +38,9 @@ fn store() -> &'static RwLock<Store> {
 /// Entries in the store, readable without the lock (the hot path asks this every layout).
 static LEN: AtomicUsize = AtomicUsize::new(0);
 
-/// Remember the issues an external checker found in `text` (a paragraph with language key `key`)
-/// checked in `language`. Issues outside the text, empty, or not on character boundaries are
-/// dropped; the rest are sorted by start.
-pub fn put(text: &str, key: &str, language: &str, issues: Vec<Issue>) {
+/// Remember the issues an external checker found in `text` checked in `language`. Issues outside the text, empty, or
+/// not on character boundaries are dropped; the rest are sorted by start.
+pub fn put(text: &str, language: &str, issues: Vec<Issue>) {
     let mut issues: Vec<Issue> = issues
         .into_iter()
         .filter(|i| i.start < i.end && i.end <= text.len() && text.is_char_boundary(i.start) && text.is_char_boundary(i.end))

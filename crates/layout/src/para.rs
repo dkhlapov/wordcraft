@@ -1900,10 +1900,10 @@ pub fn layout_para(p: &Paragraph, env: &ParaEnv) -> ParaLayout {
         issues: env
             .proofing
             .map(|o| {
-                // The external checker's results are keyed without table-style formatting, as the
-                // app and the Review commands see the paragraph.
-                let key = if wordcraft_proof::external::is_empty() { String::new() } else { language_key(&proof_runs(env.doc, p, None)) };
-                proof_issues(p, &runs, &key, &o, env.typing_word, is_list_item(doc, p))
+                // Only asked for when an external checker has results: the key is the paragraph's
+                // table-free view, as the app and the Review commands see it.
+                let external = if wordcraft_proof::external::is_empty() { String::new() } else { external_language(env.doc, p) };
+                proof_issues(p, &runs, &external, &o, env.typing_word, is_list_item(doc, p))
             })
             .unwrap_or_default(),
         drop_cap,
@@ -3145,21 +3145,6 @@ impl ProofRun {
     }
 }
 
-/// The paragraph's language key for the external checker's results ([`wordcraft_proof::external`]):
-/// its runs' language tags with the byte ranges they cover, adjacent runs in one language merged.
-/// Build `runs` without table-style formatting ([`proof_runs`] with `None`) so every caller agrees.
-/// Identical text in another language gets another key (#2679).
-pub fn language_key(runs: &[ProofRun]) -> String {
-    let mut spans: Vec<(&str, usize, usize)> = Vec::new();
-    for r in runs {
-        match spans.last_mut() {
-            Some((t, _, end)) if *t == r.tag && *end == r.range.start => *end = r.range.end,
-            _ => spans.push((&r.tag, r.range.start, r.range.end)),
-        }
-    }
-    spans.iter().map(|(t, a, b)| format!("{t}@{a}-{b}")).collect::<Vec<_>>().join(",")
-}
-
 /// The proofing runs of a paragraph, in order. `table` is the cell's table-style character
 /// formatting ([`CellText::chr`]) for a paragraph in a table, as layout resolves it.
 pub fn proof_runs(doc: &Document, p: &Paragraph, table: Option<&CharProps>) -> Vec<ProofRun> {
@@ -3181,7 +3166,7 @@ fn lang_at(runs: &[ProofRun], off: usize) -> wordcraft_proof::ProofLang {
 pub fn paragraph_issues(
     p: &Paragraph,
     runs: &[ProofRun],
-    key: &str,
+    external_language: &str,
     spelling: &wordcraft_proof::Options,
     grammar: bool,
     list_item: bool,
@@ -3194,8 +3179,7 @@ pub fn paragraph_issues(
     let skip = |a: usize, b: usize| runs.iter().any(|r| r.skip && r.range.start < b && a < r.range.end);
     // The external checker's result for this text when it has one (#575), each issue in the
     // language of the run it is in; grammar marks only with `grammar`.
-    let external_language = wordcraft_proof::external::wanted(runs.first().and_then(|r| r.tag.as_deref()));
-    if let Some(found) = wordcraft_proof::check_external(&text, &external_language) {
+    if let Some(found) = wordcraft_proof::check_external(&text, external_language) {
         let lang_at = |at: usize| spans.iter().find(|(r, _)| r.contains(&at)).map(|(_, l)| *l).unwrap_or_default();
         return found
             .into_iter()
@@ -3218,24 +3202,46 @@ pub fn is_list_item(doc: &Document, p: &Paragraph) -> bool {
 fn proof_issues(
     p: &Paragraph,
     runs: &[ProofRun],
-    key: &str,
+    external_language: &str,
     opts: &crate::ProofOptions,
     typing: Option<(usize, usize)>,
     list_item: bool,
 ) -> Vec<(usize, usize, bool)> {
-    paragraph_issues(p, runs, key, &opts.spelling, opts.grammar, list_item)
+    paragraph_issues(p, runs, external_language, &opts.spelling, opts.grammar, list_item)
         .into_iter()
         .map(|i| (i.start, i.end, i.kind == wordcraft_proof::IssueKind::Grammar))
         .filter(|&(a, b, grammar)| grammar || !typing.is_some_and(|(s, e)| a < e && s < b))
         .collect()
 }
 
-/// The language an external checker is asked to check `p` in: the setting, or the language of
-/// its first run (the one the checker's scheduler uses).
+/// The language key an external checker's result for `p` is stored under: the setting, or the
+/// language of its first run (the one the checker is asked in). A paragraph mixing languages (#763)
+/// adds the runs' language tags and byte ranges ([`language_key`]), so identical text with another
+/// mix of languages has its own result (#2679). Built without table-style formatting
+/// ([`proof_runs`] with `None`), so the app, layout and the Review commands agree.
 pub fn external_language(doc: &Document, p: &Paragraph) -> String {
     let plain = CharProps::default();
     let first = p.run_ranges().next().map(|(_, c)| c).unwrap_or(&plain);
-    wordcraft_proof::external::wanted(doc.styles.resolve_char(p.props.style.as_deref(), first).lang.as_deref())
+    let base = wordcraft_proof::external::wanted(doc.styles.resolve_char(p.props.style.as_deref(), first).lang.as_deref());
+    let runs = proof_runs(doc, p, None);
+    match runs.first() {
+        Some(f) if runs.iter().any(|r| r.tag != f.tag) => format!("{base}|{}", language_key(&runs)),
+        _ => base,
+    }
+}
+
+/// The paragraph's language tags with the byte ranges they cover, adjacent runs in one language
+/// merged. `runs` should come from [`proof_runs`] with `None`.
+pub fn language_key(runs: &[ProofRun]) -> String {
+    let mut spans: Vec<(&str, usize, usize)> = Vec::new();
+    for r in runs {
+        let tag = r.tag.as_deref().unwrap_or("");
+        match spans.last_mut() {
+            Some((t, _, end)) if *t == tag && *end == r.range.start => *end = r.range.end,
+            _ => spans.push((tag, r.range.start, r.range.end)),
+        }
+    }
+    spans.iter().map(|(t, a, b)| format!("{t}@{a}-{b}")).collect::<Vec<_>>().join(",")
 }
 
 /// Text for proofing with the same byte offsets: inline objects and tracked deletions become
