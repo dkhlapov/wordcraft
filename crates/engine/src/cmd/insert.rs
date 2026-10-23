@@ -109,7 +109,7 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("insert.pageField", "Insert Page Field", "Insert › Text › Quick Parts", |s, _| field(s, &json!({"instr": "PAGE"})))
             .key(super::mac_or("Ctrl+Shift+P", "Alt+Shift+P")),
         CommandSpec::new("insert.dropCap", "Drop Cap", "Insert › Text", drop_cap)
-            .params(r#"{"position"?: "none"|"dropped"|"margin" (default dropped), "lines"?: 1..10 (default 3; 0 = none), "distance"?: pt from the text (0..1584, default 0), "font"?: family (omit for the text's font)}"#)
+            .params(r#"{"position"?: "none"|"dropped"|"margin" (default dropped), "lines"?: 1..10 (default 3; 0 = none), "distance"?: pt from the text (0..1584, default 0), "font"?: family (omit for the text's font), "keep"?: bool (true: each selected paragraph that has a drop cap keeps its own lines, distance and font unless given here)}"#)
             .when(drop_cap_off),
         CommandSpec::new("insert.horizontalLine", "Horizontal Line", "Home › Paragraph › Borders", |s, _| {
             super::para::fmt(s, &|p| {
@@ -1349,6 +1349,7 @@ fn drop_cap(s: &mut Session, v: &Value) -> CmdResult {
     let lines = v.get("lines").and_then(Value::as_f64).filter(|l| l.is_finite());
     let none = p::str(v, "position") == Some("none") || lines == Some(0.0);
     let margin = p::str(v, "position") == Some("margin");
+    let lines_given = lines.is_some();
     let lines = lines.map_or(3.0, |l| l.round().clamp(1.0, 10.0)) as u8;
     let distance = p::f32(v, "distance").map_or(0.0, |d| d.clamp(0.0, wordcraft_doc::resolve::MAX_DROP_CAP_DISTANCE));
     // A family name, not a paragraph of text.
@@ -1356,11 +1357,19 @@ fn drop_cap(s: &mut Session, v: &Value) -> CmdResult {
     if !none && let Some(why) = drop_cap_selection_off(s) {
         return Err(CmdError::Failed(why.into()));
     }
+    // `keep` (the menu's Dropped / In margin): a paragraph that has a drop cap keeps its own
+    // lines, distance and font unless given here.
+    let keep = !none && v.get("keep").and_then(Value::as_bool) == Some(true);
+    let (distance_given, font_given) = (p::f32(v, "distance").is_some(), font.is_some());
     super::para::fmt(s, &|p| {
-        p.drop_cap = (!none).then_some(lines);
+        let own = keep && p.drop_cap.is_some();
+        p.drop_cap = (!none).then(|| if own && !lines_given { p.drop_cap.unwrap_or(lines) } else { lines });
         p.drop_cap_margin = (!none && margin).then_some(true);
-        p.drop_cap_distance = (!none && distance > 0.0).then_some(distance);
-        p.drop_cap_font = font.clone().filter(|_| !none);
+        let d = if own && !distance_given { p.drop_cap_distance.unwrap_or(0.0) } else { distance };
+        p.drop_cap_distance = (!none && d > 0.0).then_some(d);
+        if !(own && !font_given) {
+            p.drop_cap_font = font.clone().filter(|_| !none);
+        }
     })
 }
 
