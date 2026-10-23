@@ -3946,6 +3946,7 @@ fn vml_textbox_style_anchor_and_fit() {
     let tb = doc.parts.get(&story_id).unwrap();
     assert_eq!(tb.body.anchor, wordcraft_doc::props::VAlign::Center);
     assert!(tb.body.auto_fit);
+}
 
 /// #2601: a drop-cap frame of two letters in two fonts. The first letter's font is the cap's; only
 /// the runs in that font get the text's font back, the other letter keeps its own.
