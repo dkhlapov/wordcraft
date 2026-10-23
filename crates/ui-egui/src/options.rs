@@ -395,8 +395,15 @@ fn language_name(lang: wordcraft_engine::proof::ProofLang) -> &'static str {
 /// switch and language go through `ui.languageTool`.
 fn language_tool(app: &mut WordApp, ui: &mut Ui) {
     use wordcraft_languagetool::{DEFAULT_SERVER, http};
+    // The address and account are edited as a draft and applied together: a half-typed address
+    // must never be used (every keystroke would send text, and the key, to it).
+    let saved = (app.ui.language_tool.server.clone(), app.ui.language_tool.username.clone(), app.ui.language_tool.api_key.clone());
+    let id = egui::Id::new("options_language_tool_draft");
+    let mut draft = ui.data(|d| d.get_temp::<(String, String, String)>(id)).unwrap_or_else(|| saved.clone());
     let mut on = app.ui.language_tool.enabled;
-    let r = ui.add_enabled(http::available(), egui::Checkbox::new(&mut on, tl!("Check spelling and grammar with LanguageTool")));
+    // Switching on waits for Apply, so text only ever goes to the server the box shows; off is always allowed.
+    let r = ui
+        .add_enabled(http::available() && (on || draft == saved), egui::Checkbox::new(&mut on, tl!("Check spelling and grammar with LanguageTool")));
     if !http::available() {
         r.on_disabled_hover_text(tl!(http::UNSUPPORTED_REASON));
     } else if r.changed()
@@ -411,11 +418,6 @@ fn language_tool(app: &mut WordApp, ui: &mut Ui) {
         .small()
         .weak(),
     );
-    // The address and account are edited as a draft and applied together: a half-typed address
-    // must never be used (every keystroke would send text, and the key, to it).
-    let saved = (app.ui.language_tool.server.clone(), app.ui.language_tool.username.clone(), app.ui.language_tool.api_key.clone());
-    let id = egui::Id::new("options_language_tool_draft");
-    let mut draft = ui.data(|d| d.get_temp::<(String, String, String)>(id)).unwrap_or_else(|| saved.clone());
     let mut enter = false;
     ui.horizontal(|ui| {
         ui.label(tl!("Server:"));
