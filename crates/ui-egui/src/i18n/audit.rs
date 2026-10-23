@@ -527,6 +527,9 @@ fn every_disabled_reason_is_translated() {
         }
     }
     assert!(reasons.len() > 20, "the source scan found only {reasons:#?}");
+    // Reasons the UI itself gives (`widgets.rs::tooltip`), which the engine's checks never reach.
+    let mut reasons = reasons;
+    reasons.insert("Open a document first".to_string());
     let mut missing = Vec::new();
     for l in super::Lang::all().filter(|l| *l != super::Lang::EN) {
         missing.extend(reasons.iter().filter(|r| !super::has(l, r)).map(|r| format!("{}: {r:?}", l.code())));
