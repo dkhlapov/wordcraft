@@ -447,6 +447,15 @@ pub enum Dialog {
         edit: bool,
         message: String,
     },
+    /// Mailings › Finish & Merge › Edit Individual Documents… or Print Documents… (`print`):
+    /// which records to merge (0 all, 1 the previewed one, 2 the From and To range).
+    MergeRecords {
+        print: bool,
+        choice: u8,
+        from: String,
+        to: String,
+        message: String,
+    },
     /// Mailings › Find Recipient.
     FindRecipient {
         text: String,
@@ -988,6 +997,8 @@ impl Dialog {
             Dialog::SelectTable { .. } => "selectTable",
             Dialog::InsertMergeField { .. } => "insertMergeField",
             Dialog::FindRecipient { .. } => "findRecipient",
+            Dialog::MergeRecords { print: false, .. } => "mergeRecords",
+            Dialog::MergeRecords { .. } => "printRecords",
             Dialog::FieldCode { edit: false, .. } => "fieldCode",
             Dialog::FieldCode { .. } => "editFieldCode",
             Dialog::MergeRule { rule, .. } if rule == "SKIPIF" => "ruleSkipIf",
@@ -1249,6 +1260,13 @@ impl Dialog {
                 Dialog::InsertMergeField { field: fields.first().cloned().unwrap_or_default(), fields }
             }
             "findRecipient" => Dialog::FindRecipient { text: String::new(), message: String::new() },
+            "mergeRecords" | "printRecords" => Dialog::MergeRecords {
+                print: name == "printRecords",
+                choice: 0,
+                from: "1".into(),
+                to: app.session.merge.rows.len().to_string(),
+                message: String::new(),
+            },
             "fieldCode" => Dialog::FieldCode { code: String::new(), edit: false, message: String::new() },
             "editFieldCode" => {
                 let field = wordcraft_engine::cmd::fields::selected(&app.session).into_iter().next()?;
@@ -1446,6 +1464,7 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
         Dialog::SelectTable { .. } => "Select Table",
         Dialog::InsertMergeField { .. } => "Insert Merge Field",
         Dialog::FindRecipient { .. } => "Find Recipient",
+        Dialog::MergeRecords { .. } => "Finish & Merge",
         Dialog::FieldCode { edit: false, .. } => "Field",
         Dialog::FieldCode { .. } => "Edit Field Code",
         Dialog::MergeRule { rule, .. } if rule == "SKIPIF" => "Skip Record If",
@@ -2978,6 +2997,46 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             }
             cancel
         }
+        Dialog::MergeRecords { print, choice, from, to, message } => {
+            ui.radio_value(choice, 0, tl!("All"));
+            ui.radio_value(choice, 1, tl!("Current record"));
+            ui.horizontal(|ui| {
+                ui.radio_value(choice, 2, tl!("From:"));
+                // Typing a number picks the range, as in Word.
+                if ui.add(egui::TextEdit::singleline(from).desired_width(60.0)).changed() {
+                    *choice = 2;
+                }
+                ui.label(tl!("To:"));
+                if ui.add(egui::TextEdit::singleline(to).desired_width(60.0)).changed() {
+                    *choice = 2;
+                }
+            });
+            if !message.is_empty() {
+                ui.label(egui::RichText::new(message.as_str()).small().weak());
+            }
+            let (ok, cancel) = buttons(ui, tl!(if *print { "Print" } else { "OK" }));
+            if ok {
+                let params = match *choice {
+                    0 => Some(json!({"records": "all"})),
+                    1 => Some(json!({"records": "current"})),
+                    _ => match (from.trim().parse::<u64>(), to.trim().parse::<u64>()) {
+                        (Ok(f), Ok(t)) => Some(json!({"from": f, "to": t})),
+                        _ => None,
+                    },
+                };
+                let id = if *print { "mailings.printDocuments" } else { "mailings.finish" };
+                // An empty range is reported here, before Save Changes asks about the document.
+                let run = params.ok_or_else(|| tl!("Enter a number.").to_string()).and_then(|p| {
+                    wordcraft_engine::cmd::mailings::merge_range(&app.session, &p).map_err(|e| e.to_string())?;
+                    app.run(id, p)
+                });
+                match run {
+                    Ok(_) => return true,
+                    Err(e) => *message = e,
+                }
+            }
+            cancel
+        }
         Dialog::MergeRule { rule, fields, field, value, then, els } => {
             let skip = rule == "SKIPIF";
             ui.label(tl!(if skip {
@@ -4200,11 +4259,34 @@ mod tests {
     #[test]
     fn command_search_respects_turkish_i_pairs_and_keeps_canonical_matches() {
         use egui_kittest::kittest::Queryable;
+        // Turkish casing follows the language code; the labels are fixtures with both I pairs.
+        const LABELS: &str =
+            "\tItalic\tİtalik\n\tHome\tGiriş\n\tFont\tYazı Tipi\n\tTable of Contents\tİçindekiler Tablosu\n\tReferences\tBaşvurular\n";
+        let reg = app_with("").session.registry.clone();
+        let italic = reg.get("format.italic").unwrap();
+        let table = reg.get("insert.table").unwrap();
+        let toc = reg.all().iter().find(|c| c.label == "Table of Contents" && c.location == "References › Table of Contents").unwrap();
+        crate::i18n::set_current(crate::i18n::fixture_lang("tr", LABELS));
+        for query in ["italik", "İTALİK", "YAZI TİPİ", "FORMAT.ITALIC", "ITALIC"] {
+            assert!(command_matches(italic, query), "tr: {query}");
+        }
+        for query in ["içindekiler", "TABLE OF CONTENTS"] {
+            assert!(command_matches(toc, query), "tr: {query}");
+        }
+        for query in ["INSERT", "INSERT.TABLE"] {
+            assert!(command_matches(table, query), "tr: {query}");
+        }
+        assert_eq!(crate::i18n::lowercase("Iİıi"), "ıiıi");
+        // The same labels under another language's code use Unicode's default casing.
+        crate::i18n::set_current(crate::i18n::fixture_lang("x-fixture", LABELS));
+        assert!(!command_matches(italic, "italik"), "İ lowercases to i plus a combining dot");
+        assert_eq!(crate::i18n::lowercase("Iİıi"), "ii\u{307}ıi");
+        crate::i18n::set_current(crate::i18n::Lang::EN);
+
         let mut fonts = false;
         let mut h = egui_kittest::Harness::builder().with_size(vec2(1440.0, 900.0)).build_ui_state(
             move |ui, app: &mut WordApp| {
                 let ctx = ui.ctx().clone();
-                crate::i18n::set_current(crate::i18n::Lang::from_pref(&app.ui.language));
                 if fonts {
                     show(app, &ctx);
                 } else {
@@ -4215,36 +4297,18 @@ mod tests {
             app_with("Unchanged document"),
         );
         let before = serde_json::to_value(&h.state().session.doc).unwrap();
-        for (language, query, expected) in [
-            ("tr", "italik", "İtalik   —   Giriş › Yazı Tipi"),
-            ("tr", "İTALİK", "İtalik   —   Giriş › Yazı Tipi"),
-            ("tr", "içindekiler", "İçindekiler Tablosu   —   Başvurular › İçindekiler Tablosu"),
-            ("tr", "YAZI TİPİ", "İtalik   —   Giriş › Yazı Tipi"),
-            // Dozens of commands match a lone INSERT and the box shows 14, in registry order: the
-            // witness is an early one; Table is checked below, past the box's limit.
-            ("tr", "INSERT", "Bölünemez Boşluk   —   Ekle › Semboller"),
-            ("tr", "INSERT.TABLE", "Tablo   —   Ekle › Tablolar"),
-            ("tr", "FORMAT.ITALIC", "İtalik   —   Giriş › Yazı Tipi"),
-            ("tr", "TABLE OF CONTENTS", "İçindekiler Tablosu   —   Başvurular › İçindekiler Tablosu"),
-            ("en", "ITALIC", "Italic   —   Home › Font"),
-            ("en", "FORMAT.ITALIC", "Italic   —   Home › Font"),
-            ("en", "INSERT.TABLE", "Table   —   Insert › Tables"),
-        ] {
-            h.state_mut().ui.language = language.into();
+        for (query, expected) in
+            [("ITALIC", "Italic   —   Home › Font"), ("FORMAT.ITALIC", "Italic   —   Home › Font"), ("INSERT.TABLE", "Table   —   Insert › Tables")]
+        {
             h.state_mut().dialog = Some(Dialog::Commands { query: query.into(), swallow: false });
             h.run_steps(4);
             assert!(
                 h.query(egui_kittest::kittest::By::new().role(egui::accesskit::Role::Button).label_contains(expected)).is_some(),
-                "{language}: {query}\n{:?}",
+                "{query}\n{:?}",
                 h.query_all_by_role(egui::accesskit::Role::Button).collect::<Vec<_>>()
             );
-            assert_eq!(crate::i18n::lowercase("Iİıi"), if language == "tr" { "ıiıi" } else { "ii\u{307}ıi" });
         }
         assert_eq!(serde_json::to_value(&h.state().session.doc).unwrap(), before, "search does not change the document");
-        crate::i18n::set_current(crate::i18n::Lang::from_pref("tr"));
-        let reg = h.state().session.registry.clone();
-        assert!(command_matches(reg.get("insert.table").unwrap(), "INSERT"), "tr: INSERT finds Table");
-        crate::i18n::set_current(crate::i18n::Lang::EN);
     }
 
     /// #2986: a box that keeps the keyboard asks for focus only while it lacks it. `request_focus`
@@ -4384,6 +4448,52 @@ mod tests {
 
     /// #1346: a check box the selected paragraphs differ in shows as neither on nor off; a click
     /// and OK turn it on in all of them, and the other fields they differ in stay as they were.
+    /// #3028: the records dialog refuses a range with no records itself, before Save Changes asks
+    /// about the unsaved document; a good range goes on to that question.
+    #[test]
+    fn merge_records_dialog_checks_the_range_before_asking_to_save() {
+        use egui_kittest::kittest::Queryable;
+        let mut app = app_with("Dear ");
+        let _ = app.run("mailings.recipients", json!({"csv": "Name\nAda\nAlan\nGrace"}));
+        let _ = app.run("text.insert", json!({"text": "unsaved"}));
+        assert!(app.session.dirty);
+        app.dialog = Dialog::open("mergeRecords", &mut app);
+        if let Some(Dialog::MergeRecords { choice, from, to, .. }) = &mut app.dialog {
+            *choice = 2;
+            *from = "3".into();
+            *to = "2".into();
+        }
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                let ctx = ui.ctx().clone();
+                app.logic(&ctx);
+                app.ui(ui);
+            },
+            app,
+        );
+        for _ in 0..4 {
+            h.step();
+        }
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "OK").click();
+        for _ in 0..2 {
+            h.step();
+        }
+        let Some(Dialog::MergeRecords { message, .. }) = &h.state().dialog else { panic!("the dialog stays open") };
+        assert!(message.contains("no records from 3 to 2"), "{message}");
+        if let Some(Dialog::MergeRecords { to, .. }) = &mut h.state_mut().dialog {
+            *to = "3".into();
+        }
+        for _ in 0..2 {
+            h.step();
+        }
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "OK").click();
+        for _ in 0..2 {
+            h.step();
+        }
+        assert_eq!(h.state().dialog.as_ref().map(|d| d.name()), Some("saveChanges"));
+        assert!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body).contains("unsaved"), "nothing merged yet");
+    }
+
     #[test]
     fn paragraph_dialog_sets_a_mixed_check_box_for_all() {
         use egui_kittest::kittest::{NodeT, Queryable};
