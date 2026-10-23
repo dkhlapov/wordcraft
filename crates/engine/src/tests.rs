@@ -9455,7 +9455,7 @@ fn drop_cap_options_set_position_lines_distance_and_font() {
     assert!(s.run("insert.dropCap", &json!({})).is_err(), "off in a table cell");
 
     // A selection is as good as its worst paragraph: an empty one or one starting with a space
-    // refuses a drop cap for all, but None is always allowed.
+    // refuses a drop cap for all (the button greys out); None works while there is one to take away.
     let mut s = self::s();
     run(&mut s, "text.insert", json!({"text": "First"}));
     run(&mut s, "text.newParagraph", json!({}));
@@ -9465,7 +9465,16 @@ fn drop_cap_options_set_position_lines_distance_and_font() {
     run(&mut s, "select.all", json!({}));
     assert!(s.run("insert.dropCap", &json!({"position": "dropped"})).is_err(), "an empty paragraph in the selection");
     assert!(s.doc.body.iter().filter_map(|b| b.as_para()).all(|p| p.props.drop_cap.is_none()), "nothing changed");
-    assert!(s.run("insert.dropCap", &json!({"position": "none"})).is_ok(), "None is always allowed");
+    assert!(s.why_disabled("insert.dropCap").is_some(), "greyed out: nothing can take a drop cap or lose one");
+    run(&mut s, "select.range", json!({"anchor": {"block": 2, "off": 0}, "focus": {"block": 2, "off": 0}}));
+    run(&mut s, "insert.dropCap", json!({"position": "dropped"}));
+    // From the drop cap up into the empty paragraph (the caret there): None takes it away, the
+    // other positions are refused, as the enabled check says.
+    run(&mut s, "select.range", json!({"anchor": {"block": 2, "off": 5}, "focus": {"block": 1, "off": 0}}));
+    assert_eq!(s.why_disabled("insert.dropCap"), None, "a drop cap to take away");
+    assert!(s.run("insert.dropCap", &json!({"position": "margin"})).is_err(), "the empty paragraph can't take one");
+    assert!(s.run("insert.dropCap", &json!({"position": "none"})).is_ok(), "None takes it away");
+    assert!(s.doc.body.iter().filter_map(|b| b.as_para()).all(|p| p.props.drop_cap.is_none()), "taken away");
     let mut s = self::s();
     run(&mut s, "text.insert", json!({"text": " first"}));
     run(&mut s, "text.newParagraph", json!({}));

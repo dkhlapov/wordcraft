@@ -3958,6 +3958,6 @@ fn drop_cap_frame_keeps_other_fonts() {
     let p = paras(&d);
     assert_eq!(p.len(), 1, "the frame merges into its paragraph");
     assert_eq!(p[0].props.drop_cap_font.as_deref(), Some("Liberation Mono"));
-    assert_eq!(p[0].props_at(0).font.as_deref(), Some("Liberation Serif"), "the cap letter gets the text's font");
-    assert_eq!(p[0].props_at(1).font.as_deref(), Some("Liberation Sans"), "the other letter keeps its own");
+    assert_eq!(p[0].props_of_char(0).font.as_deref(), Some("Liberation Serif"), "the cap letter gets the text's font");
+    assert_eq!(p[0].props_of_char(1).font.as_deref(), Some("Liberation Sans"), "the other letter keeps its own");
 }

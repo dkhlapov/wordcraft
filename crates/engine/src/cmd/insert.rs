@@ -1310,13 +1310,13 @@ mod tests {
 }
 
 /// Why Insert › Drop Cap is off at the caret, as in Word: in a table cell, in an empty paragraph
-/// and in one that starts with a space.
+/// and in one that starts with a space. A selection must be fit throughout (what Dropped and In
+/// margin need), unless a paragraph in it has a drop cap for None to take away.
 fn drop_cap_off(s: &Session) -> Option<&'static str> {
-    if s.sel.focus.path.cell().is_some() {
-        return Some("drop caps can't go in a table");
-    }
-    let first = s.doc.para_at(&s.sel.focus).and_then(|p| p.text.chars().next());
-    drop_cap_first_letter(first)
+    let why = drop_cap_selection_off(s)?;
+    let story = s.sel.focus.story;
+    let has_cap = super::selected_paths(s).iter().any(|path| s.doc.para(story, path).is_some_and(|p| p.props.drop_cap.is_some()));
+    (!has_cap).then_some(why)
 }
 
 fn drop_cap_first_letter(first: Option<char>) -> Option<&'static str> {
