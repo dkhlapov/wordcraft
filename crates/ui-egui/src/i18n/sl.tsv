@@ -2763,6 +2763,16 @@ preview	Title	Naslov
 	{names} and {n} more	{names} and {n} more
 	{name} options	{name} options
 	{width} × {height} pixels	{width} × {height} pixels
+	First Record	Prvi zapis
+	Last Record	Zadnji zapis
+	Go to Record	Pojdi na zapis
+	Edit Individual Documents…	Uredi posamezne dokumente…
+	Print Documents…	Natisni dokumente…
+	Print Documents	Natisni dokumente
+	Current record	Trenutni zapis
+	From:	Od:
+	To:	Do:
+	Enter a number.	Vnesite število.
 # LanguageTool proofing (#575, #1283)
 	Check spelling and grammar with LanguageTool	Preverjaj črkovanje in slovnico z LanguageTool
 	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Pošlje besedilo vaših odstavkov na spodnji strežnik LanguageTool. Če je izklopljeno, se uporablja WordCraftov vgrajeni preverjalnik in nič ne zapusti tega računalnika.

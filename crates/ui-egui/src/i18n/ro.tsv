@@ -2762,6 +2762,16 @@ template	Letter	Scrisoare
 	cm	cm
 	mm	mm
 	pi	pi
+	First Record	Prima înregistrare
+	Last Record	Ultima înregistrare
+	Go to Record	Salt la înregistrare
+	Edit Individual Documents…	Editare documente individuale…
+	Print Documents…	Imprimare documente…
+	Print Documents	Imprimare documente
+	Current record	Înregistrarea curentă
+	From:	De la:
+	To:	Până la:
+	Enter a number.	Introduceți un număr.
 # LanguageTool proofing (#575, #1283)
 	Check spelling and grammar with LanguageTool	Verifică ortografia și gramatica cu LanguageTool
 	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Trimite textul paragrafelor tale la serverul LanguageTool de mai jos. Dezactivat, se folosește verificatorul încorporat WordCraft și nimic nu părăsește acest calculator.

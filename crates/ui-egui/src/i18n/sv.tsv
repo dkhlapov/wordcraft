@@ -2802,6 +2802,16 @@ template	Letter	Brev
 	More tabs	Fler flikar
 # #3013: Insert Table of Figures
 	Include label and number	Ta med etikett och nummer
+	First Record	Första post
+	Last Record	Sista post
+	Go to Record	Gå till post
+	Edit Individual Documents…	Redigera enskilda dokument…
+	Print Documents…	Skriv ut dokument…
+	Print Documents	Skriv ut dokument
+	Current record	Aktuell post
+	From:	Från:
+	To:	Till:
+	Enter a number.	Ange ett tal.
 # LanguageTool proofing (#575, #1283)
 	Check spelling and grammar with LanguageTool	Kontrollera stavning och grammatik med LanguageTool
 	Sends the text of your paragraphs to the LanguageTool server below. Off, WordCraft's built-in checker is used and nothing leaves this computer.	Skickar texten i dina stycken till LanguageTool-servern nedan. När det är avstängt används WordCrafts inbyggda kontroll och inget lämnar den här datorn.
