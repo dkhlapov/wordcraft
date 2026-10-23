@@ -165,11 +165,24 @@ mod platform {
     }
 
     /// One MIME type's bytes, at most `cap`; `None` when absent or larger.
+    /// The read runs on its own thread so a producer that offers the type but never closes its
+    /// pipe can't hold the caller: after five seconds it gives up (the thread ends with the pipe).
     fn read(mime: &str, cap: u64) -> Option<Vec<u8>> {
-        let (pipe, _) = get_contents(ClipboardType::Regular, Seat::Unspecified, MimeType::Specific(mime)).ok()?;
-        let mut out = Vec::new();
-        pipe.take(cap.saturating_add(1)).read_to_end(&mut out).ok()?;
-        (out.len() as u64 <= cap).then_some(out)
+        let mime = mime.to_owned();
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::Builder::new()
+            .name("clipboard-wayland-read".into())
+            .spawn(move || {
+                let got = (|| {
+                    let (pipe, _) = get_contents(ClipboardType::Regular, Seat::Unspecified, MimeType::Specific(&mime)).ok()?;
+                    let mut out = Vec::new();
+                    pipe.take(cap.saturating_add(1)).read_to_end(&mut out).ok()?;
+                    (out.len() as u64 <= cap).then_some(out)
+                })();
+                let _ = tx.send(got);
+            })
+            .ok()?;
+        rx.recv_timeout(std::time::Duration::from_secs(5)).ok().flatten()
     }
 
     pub fn formats() -> Vec<String> {
@@ -243,9 +256,15 @@ mod platform {
         if std::env::var_os("DISPLAY").is_some_and(|d| !d.is_empty()) {
             commands.push(ExternalCommand::Xclip);
         }
+        // One deadline for all helpers, so two that hang cost five seconds, not ten.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
         picture_via(&commands, &mut |c| {
             let (program, args) = c.invocation();
-            run_capture(program, args, wordcraft_ui_egui::paste_picture::MAX_FILE_BYTES, std::time::Duration::from_secs(5))
+            let left = deadline.saturating_duration_since(std::time::Instant::now());
+            if left.is_zero() {
+                return None;
+            }
+            run_capture(program, args, wordcraft_ui_egui::paste_picture::MAX_FILE_BYTES, left)
         })
     }
 
