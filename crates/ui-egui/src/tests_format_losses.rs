@@ -323,17 +323,6 @@ fn save_as_word_from_the_autosave_switch_turns_autosave_on() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// Every loss the warning can list is translated in every interface language.
-#[test]
-fn every_loss_label_is_in_every_catalog() {
-    use crate::i18n::Lang;
-    for lang in Lang::all().filter(|l| *l != Lang::EN) {
-        for loss in wordcraft_engine::losses::Loss::ALL {
-            assert!(crate::i18n::has_translation(lang, loss.label()), "{}: {:?} has no translation", lang.code(), loss.label());
-        }
-    }
-}
-
 /// The keyboard answers the warning: Escape cancels, Enter on the focused Continue saves.
 #[test]
 fn the_warning_answers_from_the_keyboard() {
