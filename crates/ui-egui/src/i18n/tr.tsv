@@ -2816,3 +2816,4 @@ preview	Title	Örnek
 	drop caps can't go in a table	tabloya büyük başlangıç harfi konamaz
 	the document is protected	belge korumalı
 	Open a document first	Önce bir belge açın
+	only headings (paragraphs with an outline level) collapse	yalnızca başlıklar (anahat düzeyi olan paragraflar) daraltılabilir

@@ -2781,3 +2781,4 @@ preview	Title	Título
 	the paragraph is empty	el párrafo está vacío
 	the paragraph starts with a space	el párrafo empieza con un espacio
 	Open a document first	Abra primero un documento
+	only headings (paragraphs with an outline level) collapse	solo los títulos (párrafos con nivel de esquema) se pueden contraer

@@ -2817,3 +2817,4 @@ preview	Title	Пример
 	drop caps can't go in a table	буквицу нельзя поместить в таблицу
 	the document is protected	документ защищён
 	Open a document first	Сначала откройте документ
+	only headings (paragraphs with an outline level) collapse	сворачиваются только заголовки (абзацы с уровнем структуры)

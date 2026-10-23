@@ -2827,3 +2827,4 @@ template	Letter	Lettre
 	the paragraph is empty	le paragraphe est vide
 	the paragraph starts with a space	le paragraphe commence par une espace
 	Open a document first	Ouvrez d'abord un document
+	only headings (paragraphs with an outline level) collapse	seuls les titres (paragraphes avec un niveau hiérarchique) peuvent être réduits

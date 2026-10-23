@@ -2429,3 +2429,4 @@
 	the paragraph is empty	pasus je prazan
 	the paragraph starts with a space	pasus počinje razmakom
 	Open a document first	Prvo otvorite dokument
+	only headings (paragraphs with an outline level) collapse	skupljaju se samo naslovi (pasusi sa nivoom strukture)

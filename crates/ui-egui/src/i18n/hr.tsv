@@ -2818,3 +2818,4 @@ preview	Title	Naslov
 	drop caps can't go in a table	početno slovo ne može ići u tablicu
 	the document is protected	dokument je zaštićen
 	Open a document first	Prvo otvorite dokument
+	only headings (paragraphs with an outline level) collapse	sažimaju se samo naslovi (odlomci s razinom strukture)

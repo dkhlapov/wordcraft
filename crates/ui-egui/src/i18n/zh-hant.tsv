@@ -2420,3 +2420,4 @@
 	the paragraph is empty	段落是空的
 	the paragraph starts with a space	段落以空格開頭
 	Open a document first	請先開啟文件
+	only headings (paragraphs with an outline level) collapse	只有標題(具有大綱階層的段落)可以摺疊

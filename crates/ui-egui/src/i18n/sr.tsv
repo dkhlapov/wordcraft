@@ -2433,3 +2433,4 @@
 	the paragraph is empty	пасус је празан
 	the paragraph starts with a space	пасус почиње размаком
 	Open a document first	Прво отворите документ
+	only headings (paragraphs with an outline level) collapse	скупљају се само наслови (пасуси са нивоом структуре)

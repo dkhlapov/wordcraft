@@ -2846,3 +2846,4 @@ template	Letter	Brev
 	drop caps can't go in a table	en anfang kan inte läggas i en tabell
 	the document is protected	dokumentet är skyddat
 	Open a document first	Öppna först ett dokument
+	only headings (paragraphs with an outline level) collapse	endast rubriker (stycken med dispositionsnivå) kan fällas ihop

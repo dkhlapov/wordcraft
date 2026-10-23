@@ -2814,3 +2814,4 @@
 	drop caps can't go in a table	iniciálé nem kerülhet táblázatba
 	the document is protected	a dokumentum védett
 	Open a document first	Először nyisson meg egy dokumentumot
+	only headings (paragraphs with an outline level) collapse	csak a címsorok (vázlatszinttel rendelkező bekezdések) csukhatók össze

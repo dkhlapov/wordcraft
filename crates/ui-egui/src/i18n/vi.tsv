@@ -2858,3 +2858,4 @@ template	Letter	Thư
 	drop caps can't go in a table	không thể đặt chữ cái lớn đầu đoạn trong bảng
 	the document is protected	tài liệu đang được bảo vệ
 	Open a document first	Hãy mở một tài liệu trước
+	only headings (paragraphs with an outline level) collapse	chỉ có thể thu gọn tiêu đề (đoạn có cấp đại cương)
