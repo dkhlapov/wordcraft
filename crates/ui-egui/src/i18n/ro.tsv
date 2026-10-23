@@ -2773,3 +2773,13 @@ template	Letter	Scrisoare
 	Server:	Server:
 	Use your own LanguageTool server by entering its address, such as http://localhost:8081.	Folosește propriul server LanguageTool introducând adresa lui, de exemplu http://localhost:8081.
 	Username:	Nume de utilizator:
+	First Record	Prima înregistrare
+	Last Record	Ultima înregistrare
+	Go to Record	Salt la înregistrare
+	Edit Individual Documents…	Editare documente individuale…
+	Print Documents…	Imprimare documente…
+	Print Documents	Imprimare documente
+	Current record	Înregistrarea curentă
+	From:	De la:
+	To:	Până la:
+	Enter a number.	Introduceți un număr.
