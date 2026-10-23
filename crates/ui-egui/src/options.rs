@@ -398,7 +398,10 @@ pub(crate) fn language_tool(app: &mut WordApp, ui: &mut Ui) {
     use crate::languagetool::{Field, text_field};
     use wordcraft_languagetool::http;
     let mut on = app.ui.language_tool.enabled;
-    let r = ui.add_enabled(http::available(), egui::Checkbox::new(&mut on, tl!("Check spelling and grammar with LanguageTool")));
+    // Switching on waits for the typed server, username and key to be applied, so text only ever
+    // goes to the server the box shows; off is always allowed (#672).
+    let pending = app.language_tool.drafts.pending();
+    let r = ui.add_enabled(http::available() && (on || !pending), egui::Checkbox::new(&mut on, tl!("Check spelling and grammar with LanguageTool")));
     if !http::available() {
         r.on_disabled_hover_text(tl!(http::UNSUPPORTED_REASON));
     } else if r.changed()

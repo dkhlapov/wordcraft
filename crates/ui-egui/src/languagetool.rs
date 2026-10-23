@@ -140,6 +140,13 @@ pub struct Drafts {
     pub error: Option<String>,
 }
 
+impl Drafts {
+    /// Whether a field holds an edit that is not applied yet.
+    pub fn pending(&self) -> bool {
+        self.server.is_some() || self.username.is_some() || self.api_key.is_some()
+    }
+}
+
 /// A text field of Options › Proofing › LanguageTool.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Field {
@@ -521,6 +528,18 @@ fn next_job(app: &WordApp, settings: &Settings) -> (Option<InFlight>, bool) {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, Mutex};
+
+    /// #672: switching LanguageTool on waits for typed fields to be applied.
+    #[test]
+    fn drafts_are_pending_until_committed() {
+        let mut d = super::Drafts::default();
+        assert!(!d.pending());
+        d.username = Some("me".into());
+        assert!(d.pending());
+        d.username = None;
+        d.api_key = Some("k".into());
+        assert!(d.pending());
+    }
 
     use serde_json::json;
     use wordcraft_engine::Session;
