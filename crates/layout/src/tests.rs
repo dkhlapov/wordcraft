@@ -3868,6 +3868,28 @@ fn drop_cap_options_place_the_letter() {
     assert_ne!(text_style.as_deref(), Some("Liberation Mono"), "only the letter");
 }
 
+/// #2601: the letter's own font applies to complex-script and East Asian first letters too, and a
+/// centred or right-aligned paragraph keeps the letter in margin the distance from its first line.
+#[test]
+fn drop_cap_font_covers_scripts_and_alignment_keeps_the_gap() {
+    let font = drop_cap_layout(|p| p.drop_cap_font = Some("Liberation Mono".into()));
+    let rc = font.clusters.first().and_then(|c| font.styles.get(c.style as usize)).map(|s| s.rc.clone());
+    let Some(rc) = rc else { panic!("no style") };
+    assert_eq!(rc.font_cs, "Liberation Mono");
+    assert_eq!(rc.font_ea.as_deref(), Some("Liberation Mono"));
+
+    for align in [wordcraft_doc::props::Align::Center, wordcraft_doc::props::Align::Right] {
+        let pl = drop_cap_layout(|p| {
+            p.align = Some(align);
+            p.drop_cap_margin = Some(true);
+            p.drop_cap_distance = Some(9.0);
+        });
+        let text_x = pl.lines.first().and_then(|l| l.xs.first().copied()).unwrap_or(f32::NAN);
+        let letter_right = text_x + pl.glyphs.first().map(|g| g.dx).unwrap_or(f32::NAN) + pl.drop_cap_w;
+        assert!((text_x - letter_right - 9.0).abs() < 0.5, "{align:?}: text at {text_x}, letter's right edge {letter_right}");
+    }
+}
+
 #[test]
 fn auto_hyphenation_breaks_long_words() {
     let text = "Internationalization considerations notwithstanding, administrators systematically reconsidered extraordinarily uncharacteristic responsibilities. ".repeat(4);

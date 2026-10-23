@@ -9453,6 +9453,25 @@ fn drop_cap_options_set_position_lines_distance_and_font() {
     run(&mut s, "text.insert", json!({"text": "Cell"}));
     assert!(s.sel.focus.path.cell().is_some());
     assert!(s.run("insert.dropCap", &json!({})).is_err(), "off in a table cell");
+
+    // A selection is as good as its worst paragraph: an empty one or one starting with a space
+    // refuses a drop cap for all, but None is always allowed.
+    let mut s = self::s();
+    run(&mut s, "text.insert", json!({"text": "First"}));
+    run(&mut s, "text.newParagraph", json!({}));
+    run(&mut s, "text.newParagraph", json!({}));
+    run(&mut s, "text.insert", json!({"text": "Third"}));
+    assert_eq!(s.doc.body.len(), 3);
+    run(&mut s, "select.all", json!({}));
+    assert!(s.run("insert.dropCap", &json!({"position": "dropped"})).is_err(), "an empty paragraph in the selection");
+    assert!(s.doc.body.iter().filter_map(|b| b.as_para()).all(|p| p.props.drop_cap.is_none()), "nothing changed");
+    assert!(s.run("insert.dropCap", &json!({"position": "none"})).is_ok(), "None is always allowed");
+    let mut s = self::s();
+    run(&mut s, "text.insert", json!({"text": " first"}));
+    run(&mut s, "text.newParagraph", json!({}));
+    run(&mut s, "text.insert", json!({"text": "Second"}));
+    run(&mut s, "select.all", json!({}));
+    assert!(s.run("insert.dropCap", &json!({})).is_err(), "a paragraph starting with a space in the selection");
 }
 
 #[test]

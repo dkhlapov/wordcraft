@@ -1316,11 +1316,30 @@ fn drop_cap_off(s: &Session) -> Option<&'static str> {
         return Some("drop caps can't go in a table");
     }
     let first = s.doc.para_at(&s.sel.focus).and_then(|p| p.text.chars().next());
+    drop_cap_first_letter(first)
+}
+
+fn drop_cap_first_letter(first: Option<char>) -> Option<&'static str> {
     match first {
         None => Some("the paragraph is empty"),
         Some(c) if c.is_whitespace() => Some("the paragraph starts with a space"),
         Some(_) => None,
     }
+}
+
+/// The same check for every selected paragraph, as the command formats them all.
+fn drop_cap_selection_off(s: &Session) -> Option<&'static str> {
+    let story = s.sel.focus.story;
+    for path in super::selected_paths(s) {
+        if path.cell().is_some() {
+            return Some("drop caps can't go in a table");
+        }
+        let first = s.doc.para(story, &path).and_then(|p| p.text.chars().next());
+        if let Some(why) = drop_cap_first_letter(first) {
+            return Some(why);
+        }
+    }
+    None
 }
 
 /// Insert › Drop Cap and Drop Cap Options: none, or the letter dropped into the text or hung in
@@ -1334,6 +1353,9 @@ fn drop_cap(s: &mut Session, v: &Value) -> CmdResult {
     let distance = p::f32(v, "distance").map_or(0.0, |d| d.clamp(0.0, wordcraft_doc::resolve::MAX_DROP_CAP_DISTANCE));
     // A family name, not a paragraph of text.
     let font = p::str(v, "font").map(str::trim).filter(|f| !f.is_empty()).map(|f| f.chars().take(64).collect::<String>());
+    if !none && let Some(why) = drop_cap_selection_off(s) {
+        return Err(CmdError::Failed(why.into()));
+    }
     super::para::fmt(s, &|p| {
         p.drop_cap = (!none).then_some(lines);
         p.drop_cap_margin = (!none && margin).then_some(true);
