@@ -812,10 +812,6 @@ fn remove_optional_links(xml: &[u8], ids: &[String]) -> Vec<u8> {
     out
 }
 
-fn is_rel_attr(k: &str) -> bool {
-    k.starts_with("r:") || k == "o:relid"
-}
-
 /// Add the relationship ids `e` uses to `out`. False past [`MAX_EMBEDDED_RELS`] distinct ids
 /// (the rest aren't collected).
 fn rel_attr_values(e: &El, out: &mut HashSet<String>, depth: usize) -> bool {
@@ -823,7 +819,7 @@ fn rel_attr_values(e: &El, out: &mut HashSet<String>, depth: usize) -> bool {
         return true;
     }
     for (k, v) in &e.attrs {
-        if is_rel_attr(k) && !out.contains(v) {
+        if xml::is_rel_attr(&e.name, k) && !out.contains(v) {
             if out.len() >= MAX_EMBEDDED_RELS {
                 return false;
             }
@@ -837,8 +833,9 @@ fn set_rel_ids(e: &mut El, ids: &HashMap<String, String>, depth: usize) {
     if depth > MAX_DEPTH {
         return;
     }
+    let name = e.name.clone();
     for (k, v) in e.attrs.iter_mut() {
-        if is_rel_attr(k)
+        if xml::is_rel_attr(&name, k)
             && let Some(n) = ids.get(v.as_str())
         {
             *v = n.clone();
