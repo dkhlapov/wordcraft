@@ -100,6 +100,8 @@ pub fn command(app: &mut WordApp, id: &str, params: &Value) -> Option<Result<Val
 
 fn configure(app: &mut WordApp, p: &Value) -> Result<Value, String> {
     let mut s = app.ui.language_tool.clone();
+    let old_key = s.api_key.clone();
+    let mut server_changed = false;
     let text = |key: &str| -> Result<Option<String>, String> {
         match p.get(key) {
             None | Some(Value::Null) => Ok(None),
@@ -111,13 +113,20 @@ fn configure(app: &mut WordApp, p: &Value) -> Result<Value, String> {
         s.enabled = v.as_bool().ok_or("`enabled` must be true or false")?;
     }
     if let Some(server) = text("server")? {
-        s.server = if server.is_empty() { wordcraft_languagetool::DEFAULT_SERVER.into() } else { server };
+        let server = if server.is_empty() { wordcraft_languagetool::DEFAULT_SERVER.into() } else { server };
+        // A key belongs to the server it was entered for; a new address must not inherit it.
+        if server != s.server {
+            s.api_key.clear();
+            server_changed = true;
+        }
+        s.server = server;
     }
     if let Some(u) = text("username")? {
         s.username = u;
     }
     if let Some(k) = text("apiKey")? {
-        s.api_key = k;
+        // The Options form resends the stored key with every edit; on a new server only a different key counts.
+        s.api_key = if server_changed && k == old_key { String::new() } else { k };
     }
     if let Some(l) = text("language")? {
         if !(l == "auto" || l == "document" || wordcraft_languagetool::is_language_code(&l)) {
@@ -530,5 +539,13 @@ mod tests {
         // `ui.inspect`-style dumps never carry the key.
         app.run("ui.languageTool", json!({"apiKey": "SECRET"})).unwrap();
         assert!(!format!("{:?}", app.prefs()).contains("SECRET"));
+        // A new server address drops the key typed for the old one; a key sent along is kept.
+        app.run("ui.languageTool", json!({"server": "http://localhost:9090"})).unwrap();
+        assert_eq!(app.run("ui.languageTool", json!({})).unwrap()["apiKeySet"], false);
+        app.run("ui.languageTool", json!({"server": "http://localhost:9091", "apiKey": "NEW"})).unwrap();
+        assert_eq!(app.run("ui.languageTool", json!({})).unwrap()["apiKeySet"], true);
+        // The form resends the old key along with a new address: it must not travel to the new server.
+        app.run("ui.languageTool", json!({"server": "http://localhost:9092", "apiKey": "NEW"})).unwrap();
+        assert_eq!(app.run("ui.languageTool", json!({})).unwrap()["apiKeySet"], false);
     }
 }

@@ -143,7 +143,7 @@ fn clip(s: &str) -> String {
 /// (`127.0.0.1@elsewhere` is `elsewhere`), and an address only when it parses as loopback.
 fn is_loopback_authority(rest: &str) -> bool {
     let authority = rest.split('/').next().unwrap_or("");
-    if authority.contains('@') {
+    if authority.contains('@') || authority.contains('\\') {
         return false;
     }
     let host = if let Some(v6) = authority.strip_prefix('[') {
