@@ -3563,8 +3563,13 @@ fn a_split_row_keeps_a_turned_boxs_scope_in_both_fragments() {
     };
     let lines = Placed::Lines { story, path, para: para.clone(), l0: 0, l1: para.lines.len(), x: 0.0, y: 0.0, turn: TextDirection::Horizontal };
     let height = para.lines.last().map_or(100.0, |l| l.top + l.height) + 4.0;
-    let row =
-        RowLayout { height, items: vec![spun(true), lines, spun(false)], bottom: 0.0, cells: vec![CellPart { top: 0.0, items: 0..3, end: None }] };
+    let row = RowLayout {
+        height,
+        items: vec![spun(true), lines, spun(false)],
+        bottom: 0.0,
+        edge: 0.0,
+        cells: vec![CellPart { top: 0.0, items: 0..3, end: None }],
+    };
     let (a, b) = split_row(&row, height / 2.0).expect("the row splits between lines");
     for (name, part) in [("first", &a), ("second", &b)] {
         let at = |open| part.items.iter().position(|i| matches!(i, Placed::Spun { open: o, .. } if *o == open));
