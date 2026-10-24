@@ -260,6 +260,8 @@ pub enum Dialog {
         multiple_prev: MultiplePages,
         /// Sheets per booklet for a Book fold; 0 = all.
         sheets: u16,
+        /// "Reverse book fold": a Book fold whose booklet reads right to left.
+        reverse: bool,
         /// Document grid: kind (0 none, 1 lines, 2 lines and characters, 3 snap to characters),
         /// lines per page and characters per line; `grid_was` as opened (applied only if changed).
         grid: (u8, u32, u32),
@@ -1192,6 +1194,7 @@ impl Dialog {
                     multiple_was: app.session.doc.settings.multiple_pages(),
                     multiple_prev: app.session.doc.settings.multiple_pages(),
                     sheets: app.session.doc.settings.book_fold_sheets,
+                    reverse: app.session.doc.settings.book_fold && app.session.doc.settings.book_fold_reverse,
                     grid,
                     grid_was: grid,
                     rtl: sp.rtl,
@@ -2258,6 +2261,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             multiple_was,
             multiple_prev,
             sheets,
+            reverse,
             rtl,
             grid,
             grid_was,
@@ -2310,15 +2314,28 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             ui.label(egui::RichText::new(tl!("Pages")).font(semibold(12.5)));
             ui.horizontal(|ui| {
                 let label = ui.label(tl!("Multiple pages:"));
-                let name = |m: MultiplePages| match m {
+                // Word saves "Reverse book fold" as its own choice (a lone `w:bookFoldRevPrinting`).
+                let name = |m: MultiplePages, rev: bool| match m {
                     MultiplePages::Normal => tl!("Normal"),
                     MultiplePages::Mirror => tl!("Mirror margins"),
                     MultiplePages::TwoPerSheet => tl!("2 pages per sheet"),
+                    MultiplePages::BookFold if rev => tl!("Reverse book fold"),
                     MultiplePages::BookFold => tl!("Book fold"),
                 };
-                let combo = egui::ComboBox::from_id_salt("ps_multiple").width(180.0).selected_text(name(*multiple)).show_ui(ui, |ui| {
-                    for m in [MultiplePages::Normal, MultiplePages::Mirror, MultiplePages::TwoPerSheet, MultiplePages::BookFold] {
-                        ui.selectable_value(multiple, m, name(m));
+                let shown = name(*multiple, *reverse);
+                let combo = egui::ComboBox::from_id_salt("ps_multiple").width(180.0).selected_text(shown).show_ui(ui, |ui| {
+                    for (m, rev) in [
+                        (MultiplePages::Normal, false),
+                        (MultiplePages::Mirror, false),
+                        (MultiplePages::TwoPerSheet, false),
+                        (MultiplePages::BookFold, false),
+                        (MultiplePages::BookFold, true),
+                    ] {
+                        let on = *multiple == m && (m != MultiplePages::BookFold || *reverse == rev);
+                        if ui.selectable_label(on, name(m, rev)).clicked() {
+                            *multiple = m;
+                            *reverse = rev;
+                        }
                     }
                 });
                 combo.response.labelled_by(label.id);
@@ -2381,10 +2398,12 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                         // the document is in a halving mode already, the page is given back first, so
                         // those are checked against the whole sheet and the mode against every section.
                         let settings = &app.session.doc.settings;
-                        let changed = *multiple != *multiple_was || (book && *sheets != settings.book_fold_sheets);
+                        let changed = *multiple != *multiple_was
+                            || (book && (*sheets != settings.book_fold_sheets || *reverse != settings.book_fold_reverse));
                         let mut v = json!({"mode": multiple.id()});
                         if book {
                             v["sheets"] = json!(*sheets);
+                            v["reverse"] = json!(*reverse);
                         }
                         if multiple.halves_page() && (changed || multiple_was.halves_page()) {
                             if multiple_was.halves_page() {
@@ -5295,6 +5314,30 @@ mod tests {
             }
             _ => panic!("open"),
         }
+    }
+
+    /// "Reverse book fold" is its own choice in the combo; OK applies a book fold with the
+    /// reverse direction (Word for Mac 16.114 saves it as `w:bookFoldRevPrinting` alone).
+    #[test]
+    fn page_setup_reverse_book_fold_choice_sets_the_direction() {
+        use egui_kittest::kittest::Queryable;
+        use wordcraft_doc::section::MultiplePages;
+        let mut h = app_harness(app_with("Page"));
+        h.state_mut().run("ui.dialog", json!({"name": "pageSetup"})).unwrap();
+        h.run_steps(2);
+        h.get_by_label("Multiple pages:").click();
+        h.run_steps(6);
+        h.get_by_label("Reverse book fold").click();
+        h.run_steps(4);
+        match &h.state().dialog {
+            Some(Dialog::PageSetup { multiple, reverse, .. }) => assert!(*multiple == MultiplePages::BookFold && *reverse),
+            _ => panic!("open"),
+        }
+        h.get_by_label("OK").click();
+        h.run_steps(4);
+        let st = &h.state().session.doc;
+        assert_eq!(st.settings.multiple_pages(), MultiplePages::BookFold);
+        assert!(st.settings.book_fold_reverse);
     }
 
     /// Switching to Book fold turns the margins once; editing the paper size afterwards leaves the

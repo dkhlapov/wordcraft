@@ -276,7 +276,7 @@ Installed static fonts also resolve by their OpenType PostScript name (name ID 6
 | 2026-10-16 | trivial | AutoFit donors lose equal widths, bounded by content minima |
 | 2026-10-16 | minor | Multiple pages page sizes follow Word for Mac 16.113.4 (user-checked): 2 pages per sheet on a landscape sheet halves its width; a Book fold page is half the paper's short side by its long side (#1836) |
 | 2026-10-16 | minor | Page Setup › Multiple pages: 2 pages per sheet and Book fold lay pages out on half the sheet (#1836) |
-| 2026-10-22 | trivial | Word for Mac 16.114 re-check (#1836): Book fold dialog (Inside/Outside, Gutter position fixed at Inside, "Sheets in booklet" default All, Apply to greyed out) and the half-width landscape section page size match; the booklet direction (right-to-left) could not be set in Word, so it is unverified |
+| 2026-10-24 | minor | Word for Mac 16.114 (#1836): Book fold dialog (Inside/Outside, Gutter position fixed at Inside, "Sheets in booklet" default All, Apply to greyed out) matches; "Reverse book fold" is a fifth Multiple pages choice laid out like Book fold (it is the booklet's direction, stored alone in the file), and is offered in our dialog |
 | 2026-10-16 | trivial | Behind-text pictures in table cells participate in centre and bottom vertical alignment without increasing row flow height. |
 | 2026-10-15 | trivial | Absent or zero DrawingML effect extents remain zero on rotated pictures; contracted axes no longer reserve invented effects room. Synthetic quarter-turn import regression (`zero_effects_stay_zero_rotated`). |
 | 2026-10-15 | trivial | Additive paragraph spacing retains the full before-space after a section page break; ordinary overlapping spacing is unchanged. |

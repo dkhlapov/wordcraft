@@ -1210,8 +1210,12 @@ impl Reader<'_> {
                 "m:mathPr" => s.math = Some(math::read_math_pr(k)),
                 "w:mirrorMargins" => s.mirror_margins = on_off(k),
                 "w:printTwoOnOne" => s.two_per_sheet = on_off(k),
-                "w:bookFoldPrinting" => s.book_fold = on_off(k),
-                "w:bookFoldRevPrinting" => s.book_fold_reverse = on_off(k),
+                "w:bookFoldPrinting" => s.book_fold |= on_off(k),
+                // Word's "Reverse book fold" saves this flag alone, in place of the plain one.
+                "w:bookFoldRevPrinting" => {
+                    s.book_fold_reverse = on_off(k);
+                    s.book_fold |= s.book_fold_reverse;
+                }
                 "w:bookFoldPrintingSheets" => {
                     // Word offers 1–40 sheets per booklet (0: all); anything else clamps.
                     if let Some(v) = k.attr("w:val").map(str::trim) {

@@ -2698,9 +2698,26 @@ fn multiple_pages_settings_round_trip() {
     std::io::Read::read_to_string(&mut zip.by_name("word/settings.xml").unwrap(), &mut xml).unwrap();
     let at = |tag: &str| xml.find(tag).unwrap_or_else(|| panic!("{tag} missing: {xml}"));
     assert!(at("<w:evenAndOddHeaders") < at("<w:bookFoldRevPrinting"));
-    assert!(at("<w:bookFoldRevPrinting") < at("<w:bookFoldPrinting"));
-    assert!(at("<w:bookFoldPrinting") < at("<w:bookFoldPrintingSheets w:val=\"4\""));
+    // Word for Mac 16.114 saves "Reverse book fold" as the reverse flag alone, not beside the plain one.
+    assert!(!xml.contains("<w:bookFoldPrinting/>"), "{xml}");
+    assert!(at("<w:bookFoldRevPrinting") < at("<w:bookFoldPrintingSheets w:val=\"4\""));
     assert!(!xml.contains("printTwoOnOne"), "{xml}");
+    // A plain book fold writes the plain flag only; a file with the reverse flag alone is a
+    // reverse book fold, as Word reads it.
+    let mut d = Document::new();
+    d.settings.set_multiple_pages(MultiplePages::BookFold);
+    let xml = zip_part(&wordcraft_docx::write(&d).expect("write"), "word/settings.xml");
+    assert!(xml.contains("<w:bookFoldPrinting/>") && !xml.contains("bookFoldRevPrinting"), "{xml}");
+    let lone = replace_part(
+        &wordcraft_docx::write(&Document::new()).expect("write"),
+        "word/settings.xml",
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:bookFoldRevPrinting/><w:defaultTabStop w:val="720"/></w:settings>"#,
+    );
+    let back = wordcraft_docx::read(&lone).expect("read");
+    assert_eq!(back.settings.multiple_pages(), MultiplePages::BookFold);
+    assert!(back.settings.book_fold_reverse);
+    let again = wordcraft_docx::read(&wordcraft_docx::write(&back).expect("write")).expect("read");
+    assert!(again.settings.book_fold && again.settings.book_fold_reverse);
     let mut d = Document::new();
     d.settings.set_multiple_pages(MultiplePages::TwoPerSheet);
     let bytes = wordcraft_docx::write(&d).expect("write");

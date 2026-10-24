@@ -1065,10 +1065,11 @@ fn settings_xml(doc: &Document, footnotes: bool, endnotes: bool, template_rel: O
         w.empty("w:evenAndOddHeaders", &[]);
     }
     // §17.15.1.9, .8, .10: a booklet, its direction (right to left) and its sheets.
-    if s.book_fold_reverse {
+    // Word's "Reverse book fold" is its own choice: it saves the reverse flag instead of the plain
+    // one (Word for Mac 16.114, with a right-to-left input source), and reads back as a book fold.
+    if s.book_fold && s.book_fold_reverse {
         w.empty("w:bookFoldRevPrinting", &[]);
-    }
-    if s.book_fold {
+    } else if s.book_fold {
         w.empty("w:bookFoldPrinting", &[]);
     }
     if s.book_fold && s.book_fold_sheets > 0 {
