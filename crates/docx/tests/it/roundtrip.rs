@@ -2787,7 +2787,10 @@ fn picture_preset_geometry_round_trips_unchanged() {
     let gd = |n: &str, v: &str| format!(r#"<a:gd name="{n}" fmla="val {v}"/>"#);
     for (geom, drawn) in [
         (r#"<a:prstGeom prst="cloud"><a:avLst/></a:prstGeom>"#.to_string(), ShapeKind::Ellipse),
-        (format!(r#"<a:prstGeom prst="leftArrow"><a:avLst>{}{}</a:avLst></a:prstGeom>"#, gd("adj1", "30000"), gd("adj2", "70000")), ShapeKind::Arrow),
+        (
+            format!(r#"<a:prstGeom prst="leftArrow"><a:avLst>{}{}</a:avLst></a:prstGeom>"#, gd("adj1", "30000"), gd("adj2", "70000")),
+            ShapeKind::ArrowLeft,
+        ),
         (format!(r#"<a:prstGeom prst="octagon"><a:avLst>{}</a:avLst></a:prstGeom>"#, gd("adj", "20000")), ShapeKind::Rectangle),
     ] {
         let opened = wordcraft_docx::read(&replace_part(&bytes, "word/document.xml", xml.replace(plain, &geom).as_bytes())).unwrap();

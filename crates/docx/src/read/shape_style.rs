@@ -64,11 +64,11 @@ pub(crate) fn preset_name(kind: ShapeKind) -> &'static str {
         ShapeKind::Line => "line",
         ShapeKind::StraightConnector => "straightConnector1",
         ShapeKind::ElbowConnector => "bentConnector3",
+        ShapeKind::CurvedConnector => "curvedConnector3",
         ShapeKind::Arrow => "rightArrow",
         ShapeKind::ArrowLeft => "leftArrow",
         ShapeKind::ArrowUp => "upArrow",
         ShapeKind::ArrowDown => "downArrow",
-        ShapeKind::Arrow => "rightArrow",
         ShapeKind::Star => "star5",
         ShapeKind::Heart => "heart",
     }
