@@ -961,6 +961,7 @@ impl Document {
             media,
             passthrough,
             glossary,
+            svg_fallbacks,
         } = self;
         let Document {
             body: other_body,
@@ -979,6 +980,7 @@ impl Document {
             media: other_media,
             passthrough: other_passthrough,
             glossary: other_glossary,
+            svg_fallbacks: other_fallbacks,
         } = other;
         same_blocks(body, other_body)
             && same_parts(parts, other_parts)
@@ -996,6 +998,7 @@ impl Document {
             && same_bytes(media, other_media)
             && same_bytes(passthrough, other_passthrough)
             && same_glossary(glossary, other_glossary)
+            && svg_fallbacks == other_fallbacks
     }
 
     pub fn story(&self, s: StoryRef) -> Option<&Blocks> {
