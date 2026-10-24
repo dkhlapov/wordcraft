@@ -309,6 +309,33 @@ fn the_worker_checks_in_the_background_and_backs_off_when_limited() {
 }
 
 #[test]
+fn dropping_the_worker_cancels_the_queued_paragraphs() {
+    let (started_tx, started) = std::sync::mpsc::channel::<()>();
+    let (release_tx, release) = std::sync::mpsc::channel::<()>();
+    let calls = Arc::new(Mutex::new(Vec::<String>::new()));
+    let log = calls.clone();
+    let transport: worker::Transport = Box::new(move |r: &Request| {
+        let text = form(&r.body).into_iter().find(|(k, _)| k == "text").map(|(_, v)| v).unwrap_or_default();
+        log.lock().unwrap().push(text);
+        let _ = started_tx.send(());
+        let _ = release.recv_timeout(Duration::from_secs(10));
+        Ok(answer(json!([])))
+    });
+    let pacing = Pacing { gap: Duration::from_millis(1), backoff: Duration::from_millis(1), timeout: Duration::from_secs(1) };
+    let w = Worker::spawn(on(), pacing, transport, Box::new(|| {})).unwrap();
+    for text in ["first", "second", "third"] {
+        assert!(w.send(Job { text: text.into(), language: "auto".into() }));
+    }
+    // The first request is in flight; the other two are queued.
+    started.recv_timeout(Duration::from_secs(10)).unwrap();
+    drop(w);
+    release_tx.send(()).unwrap();
+    // The thread ends (the transport, and its sender, are dropped with it) without sending more.
+    assert!(started.recv_timeout(Duration::from_secs(10)).is_err());
+    assert_eq!(*calls.lock().unwrap(), ["first"]);
+}
+
+#[test]
 fn hosted_free_use_is_paced_under_its_rate_limit() {
     assert!(Pacing::for_settings(&on()).gap >= Duration::from_secs(3), "≤ 20 requests a minute");
     assert!(Pacing::for_settings(&Settings { server: "http://localhost:8081".into(), ..on() }).gap < Duration::from_secs(1));
