@@ -113,7 +113,15 @@ impl Worker {
     }
 }
 
-fn run(settings: &Settings, pacing: Pacing, mut transport: Transport, jobs: &Receiver<Job>, done: &Sender<Done>, wake: &dyn Fn(), cancelled: &AtomicBool) {
+fn run(
+    settings: &Settings,
+    pacing: Pacing,
+    mut transport: Transport,
+    jobs: &Receiver<Job>,
+    done: &Sender<Done>,
+    wake: &dyn Fn(),
+    cancelled: &AtomicBool,
+) {
     let mut next_at: Option<Instant> = None;
     while let Ok(job) = jobs.recv() {
         // The worker was dropped (new settings, checking turned off, the window closed): the
