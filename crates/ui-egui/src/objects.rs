@@ -127,12 +127,22 @@ fn active_story(app: &WordApp, layout: &DocLayout) -> StoryRef {
     }
 }
 
-/// Whether the object under `hit` keeps its place and size: charts and diagrams can be selected
-/// and deleted, not moved or resized (they aren't written back on save yet), so they get no
-/// handles, no move cursor and no drag.
+/// Whether the object under `hit` keeps its place and size: a chart or diagram WordCraft has no
+/// model for can be selected and deleted, not moved or resized, so it gets no handles, no move
+/// cursor and no drag.
 fn fixed(app: &WordApp, hit: &ObjectHit) -> bool {
     let pos = hit.pos();
-    matches!(app.session.doc.para_at(&pos).and_then(|p| p.object_at(pos.off)), Some(InlineObject::Graphic { .. }))
+    matches!(app.session.doc.para_at(&pos).and_then(|p| p.object_at(pos.off)), Some(InlineObject::Graphic { .. })) && !size_only(app, hit)
+}
+
+/// Whether the object under `hit` is a chart or SmartArt that WordCraft can edit: it takes
+/// resize handles and is laid out again at the new size, but it can't be moved or turned.
+fn size_only(app: &WordApp, hit: &ObjectHit) -> bool {
+    let pos = hit.pos();
+    matches!(
+        app.session.doc.para_at(&pos).and_then(|p| p.object_at(pos.off)),
+        Some(InlineObject::Graphic { graphic, .. }) if graphic.chart.is_some() || graphic.smart_art.is_some()
+    )
 }
 
 /// The story of the selected text box.
@@ -342,7 +352,8 @@ pub fn pointer(app: &mut WordApp, ui: &Ui, resp: &egui::Response, pages: &[Rect]
             None => return true,
         };
         // Objects in table cells can be selected and resized, not moved; charts neither.
-        if !fixed(app, &object) && (grab != Grab::Move || movable(app, &object)) {
+        let size_only = size_only(app, &object);
+        if !fixed(app, &object) && (grab != Grab::Move || (movable(app, &object) && !size_only)) {
             let copy = grab == Grab::Move && ui.input(|i| i.modifiers.command);
             app.canvas.obj_drag = Some(ObjectDrag {
                 drag: Drag::new(grab, object.page, object.rect, object.spin.deg, at),
@@ -486,7 +497,7 @@ fn grab_at(app: &WordApp, layout: &DocLayout, pages: &[Rect], scale: f32, at: Po
     let handle = active(app, layout).filter(|(o, _)| o.story == story && !fixed(app, o)).and_then(|(o, editing)| {
         let f = screen(pages, scale, o.page, o.rect)?;
         let deg = if straightened(&o, editing) { 0.0 } else { o.spin.deg };
-        if frame::rotate_handle_at(f, deg, at) {
+        if !size_only(app, &o) && frame::rotate_handle_at(f, deg, at) {
             return Some((o, Grab::Rotate));
         }
         frame::handle_at(f, deg, at).map(|h| (o, Grab::Resize(h)))
@@ -592,6 +603,11 @@ fn drop(app: &mut WordApp, d: &ObjectDrag) {
 /// Run a finished drag's command.
 fn commit(app: &mut WordApp, d: &ObjectDrag) {
     let mut r = d.drag.rect;
+    // A chart or SmartArt takes a new size, never a new place.
+    if matches!(d.drag.grab, Grab::Resize(_)) && size_only(app, &d.object) {
+        let _ = app.run("picture.size", json!({"width": r.w, "height": r.h, "lockAspect": false}));
+        return;
+    }
     // A resize of an edited turned box ran on its straight frame: once it turns back about its
     // new centre, the edge held still would move by R·Δc − Δc. Move the frame back by that, so
     // the held edge stays at the same page point (as a turned frame's resize does).
@@ -709,7 +725,7 @@ pub fn paint(app: &WordApp, painter: &Painter, t: &Tokens, layout: &DocLayout, p
         let handles = selectable_story(app, o.story) && !fixed(app, &o);
         // A turned text box being edited is drawn straight, and so is its frame (Word check P).
         let deg = if straightened(&o, editing) { 0.0 } else { o.spin.deg };
-        frame::paint(painter, t, f, deg, editing, handles, handles);
+        frame::paint(painter, t, f, deg, editing, handles, handles && !size_only(app, &o));
     }
 }
 
@@ -778,7 +794,13 @@ pub fn cursor(app: &WordApp, layout: &DocLayout, pages: &[Rect], scale: f32, at:
     if connector_end_at(app, layout, pages, scale, at).is_some() {
         return Some(egui::CursorIcon::Crosshair);
     }
-    grab_at(app, layout, pages, scale, at).map(|(o, g)| if fixed(app, &o) { egui::CursorIcon::Default } else { g.cursor() })
+    grab_at(app, layout, pages, scale, at).map(|(o, g)| hover_cursor(app, &o, g))
+}
+
+/// The cursor over part `g` of object `o`: none of a drag for an object that won't move there (a
+/// fixed graphic, or the body of a chart or SmartArt, which only resizes).
+fn hover_cursor(app: &WordApp, o: &ObjectHit, g: Grab) -> egui::CursorIcon {
+    if fixed(app, o) || (g == Grab::Move && size_only(app, o)) { egui::CursorIcon::Default } else { g.cursor() }
 }
 
 /// Keys for a selected object: arrows nudge a floating one; typing or Enter goes into a text box.
@@ -851,6 +873,23 @@ pub(crate) mod tests {
         };
         let (app, hit) = app_with(shape);
         assert!(!fixed(&app, &hit));
+    }
+
+    #[test]
+    fn editable_smart_art_takes_resize_handles_but_not_a_move() {
+        let mut app = WordApp::new(wordcraft_engine::Session::new(Document::new()), crate::Services::default());
+        app.run("insert.smartArt", json!({"layout": "pyramid", "items": ["a", "b"]})).unwrap();
+        let hit = app.session.layout().object(&Pos::body(0, 0), 0).expect("laid out");
+        assert!(!fixed(&app, &hit));
+        assert!(size_only(&app, &hit));
+        // Its body shows no move cursor; its handles show theirs.
+        assert_eq!(hover_cursor(&app, &hit, Grab::Move), egui::CursorIcon::Default);
+        assert_ne!(hover_cursor(&app, &hit, Grab::Resize(frame::Handle { x: 1, y: 0 })), egui::CursorIcon::Default);
+        let (w0, h0) = (hit.rect.w, hit.rect.h);
+        assert!(app.run("arrange.bounds", json!({"width": w0 / 2.0, "height": h0 / 2.0})).is_err());
+        app.run("picture.size", json!({"width": w0 / 2.0, "height": h0 / 2.0, "lockAspect": false})).unwrap();
+        let hit = app.session.layout().object(&Pos::body(0, 0), 0).expect("laid out");
+        assert!((hit.rect.w - w0 / 2.0).abs() < 1.0);
     }
     /// Alignment guides: dragging a floating shape to within a few points of the page's centre
     /// snaps its centre exactly onto it and shows the guide while dragging; the drop lands there,
