@@ -1647,6 +1647,8 @@ pub fn fold_arrow(p: &Painter, r: Rect, fold: Fold, c: Color32, width: f32) {
     p.add(Shape::line(pts.to_vec(), stroke));
     for q in pts {
         p.circle_filled(q, width / 2.0, c);
+    }
+}
 
 #[cfg(test)]
 mod tests {
