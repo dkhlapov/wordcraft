@@ -4244,19 +4244,31 @@ mod tests {
         a.run("design.pageColor", json!({"color": "#102040"})).unwrap();
         let paper = |a: &WordApp| page_render_options(a, false).paper_of(&a.session.doc);
         assert_eq!(paper(&a), Rgb(0x10, 0x20, 0x40), "Print Layout shows the page color");
-        let print_key = view_key(&a, false, None);
+        let print_key = {
+            let l = a.session.layout();
+            view_key(&a, &l, false, None)
+        };
         a.run("view.readMode", json!({})).unwrap();
         assert_eq!(paper(&a), Rgb::WHITE, "None: white, the page color ignored");
-        let none_key = view_key(&a, false, None);
+        let none_key = {
+            let l = a.session.layout();
+            view_key(&a, &l, false, None)
+        };
         a.run("view.readPageColor", json!({"value": "sepia"})).unwrap();
         assert_eq!(paper(&a), wordcraft_render::SEPIA_PAPER);
         assert!(!page_render_options(&a, false).dark, "Sepia keeps the text's colors");
-        let sepia_key = view_key(&a, false, None);
+        let sepia_key = {
+            let l = a.session.layout();
+            view_key(&a, &l, false, None)
+        };
         a.run("view.readPageColor", json!({"value": "inverse"})).unwrap();
         assert!(page_render_options(&a, false).dark);
         let d = wordcraft_render::DARK_PAPER;
         assert_eq!(paper(&a), Rgb(d, d, d));
-        let inverse_key = view_key(&a, false, None);
+        let inverse_key = {
+            let l = a.session.layout();
+            view_key(&a, &l, false, None)
+        };
         let keys = [print_key, none_key, sepia_key, inverse_key];
         for (i, k) in keys.iter().enumerate() {
             assert!(!keys[..i].contains(k), "each paper has its own view key");
