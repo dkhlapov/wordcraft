@@ -2404,8 +2404,8 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                         // the document is in a halving mode already, the page is given back first, so
                         // those are checked against the whole sheet and the mode against every section.
                         let settings = &app.session.doc.settings;
-                        let changed = *multiple != *multiple_was
-                            || (book && (*sheets != settings.book_fold_sheets || *reverse != settings.book_fold_reverse));
+                        let changed =
+                            *multiple != *multiple_was || (book && (*sheets != settings.book_fold_sheets || *reverse != settings.book_fold_reverse));
                         let mut v = json!({"mode": multiple.id()});
                         if book {
                             v["sheets"] = json!(*sheets);
