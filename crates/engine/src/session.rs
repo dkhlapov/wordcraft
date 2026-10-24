@@ -1406,7 +1406,7 @@ impl Session {
     /// [`crate::cmd::protect::Facts`] for the document as it is now, cached per revision.
     fn protect_facts(&self) -> crate::cmd::protect::Facts {
         let key = (self.document_id, self.rev, self.author.clone());
-        let mut cache = self.protect_facts.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.protect_facts.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((k, f)) = cache.as_ref()
             && *k == key
         {
@@ -1515,11 +1515,12 @@ impl Session {
         let default_language_before = self.prefs.default_language.clone();
         let run = spec.run;
         let mutates = spec.mutates;
+        let rev_before = self.rev;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::cmd::column::dispatch(self, id, mutates, run, params)));
         let mut result = match result {
             Ok(r) => r,
             Err(p) => {
-                let msg = p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_default();
+                let msg = p.downcast_ref::<&str>().map(ToString::to_string).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_default();
                 Err(CmdError::Failed(format!("{id} panicked: {msg}")))
             }
         };
@@ -1559,7 +1560,7 @@ impl Session {
                     self.note_edit();
                 }
                 // Outline view: collapsed headings follow edits; the caret stays where it shows.
-                crate::cmd::outline::after_command(self, &sel_before);
+                crate::cmd::outline::after_command(self, &sel_before, self.rev != rev_before);
                 // Extra selected objects last until something else is edited or selected; formatting
                 // them keeps them selected, as in Word.
                 if !matches!(id, "select.addObject" | "arrange.ungroup" | "shape.fill" | "shape.effects") && (spec.mutates || self.sel != sel_before)
