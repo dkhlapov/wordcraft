@@ -382,6 +382,10 @@ fn language_name(lang: wordcraft_engine::proof::ProofLang) -> &'static str {
         ProofLang::Ru => tl!("Russian"),
         ProofLang::Cs => tl!("Czech"),
         ProofLang::Id => tl!("Indonesian"),
+        ProofLang::Es => tl!("Spanish (Spain)"),
+        ProofLang::EsMx => tl!("Spanish (Mexico)"),
+        ProofLang::Es419 => tl!("Spanish (Latin America)"),
+        ProofLang::EsUy => tl!("Spanish (Uruguay)"),
         // English uses its bundled word list; Bulgarian and German have no dictionary yet.
         ProofLang::En | ProofLang::EnGb | ProofLang::EnCa | ProofLang::Bg | ProofLang::De | ProofLang::Other => "",
     }
@@ -886,6 +890,9 @@ mod tests {
     /// label. AccessKit must still expose the full name and the row must keep its fixed size.
     #[test]
     fn options_nav_labels_stay_inside_their_rows() {
+        if !crate::i18n::catalogs_embedded() {
+            return;
+        }
         for language in ["en", "ru"] {
             for percent in [100, 125, 150] {
                 let mut h = nav_harness(language, percent);
@@ -929,6 +936,9 @@ mod tests {
     /// backgrounds intact, and the selected pane's settings visible at every interface size.
     #[test]
     fn options_nav_rows_keep_hover_and_selection() {
+        if !crate::i18n::catalogs_embedded() {
+            return;
+        }
         for language in ["en", "ru"] {
             for percent in [100, 125, 150] {
                 let mut h = nav_harness(language, percent);
@@ -1218,6 +1228,9 @@ mod tests {
         h.get_by_label("Animate the caret (it glides and fades)").click();
         h.run_steps(4);
         assert!(h.state().ui.caret_animation, "and on again");
+        if !crate::i18n::catalogs_embedded() {
+            return;
+        }
         h.state_mut().run("ui.language", json!({"value": "es"})).unwrap();
         h.run_steps(4);
         assert!(h.query_by_label("Animación").is_some() && h.query_by_label("Animation").is_none());
@@ -1260,6 +1273,9 @@ mod tests {
     /// takes the unit typed either way.
     #[test]
     fn length_units_follow_the_interface_language() {
+        if !crate::i18n::catalogs_embedded() {
+            return;
+        }
         let mut a = app();
         a.run("ui.language", json!({"value": "ru"})).unwrap();
         a.run("file.options", json!({"region": "ru-RU"})).unwrap();

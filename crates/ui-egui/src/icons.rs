@@ -633,6 +633,10 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.line(&[(6.0, 6.5), (4.5, 9.0), (6.5, 10.0), (9.0, 9.0)]);
             color_bar(pen, a);
         }
+        "highlightNoColor" => {
+            pen.fill(&[(5.0, 12.0), (11.0, 4.0), (14.0, 7.0), (8.0, 15.0)], c);
+            pen.line(&[(5.0, 12.0), (3.5, 15.0), (8.0, 15.0)]);
+        }
         "fontcolor" => {
             pen.glyph_a(8.0, 10.0, 8.5, c, c);
             color_bar(pen, a);
@@ -2338,6 +2342,7 @@ pub const NAMES: &[&str] = &[
     "case",
     "clear",
     "highlight",
+    "highlightNoColor",
     "fontcolor",
     "effects",
     "launcher",
@@ -2797,5 +2802,24 @@ mod tests {
             n
         };
         assert!(draw(Color32::TRANSPARENT) < draw(Color32::from_rgb(200, 30, 30)), "no fill still drew a bar");
+    }
+
+    /// #4087, #1282: No Color uses the pen-only icon, which has no colour bar whatever the accent.
+    #[test]
+    fn no_colour_highlight_icon_has_no_bar() {
+        let ctx = context();
+        let count = |name: &str, accent: Color32| {
+            let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
+            let full = ctx.run_ui(input, |ui| {
+                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+                paint_state(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), name, Color32::from_gray(66), accent, false);
+            });
+            let n = full.shapes.len();
+            full.drop_without_applying_deltas();
+            n
+        };
+        let red = Color32::from_rgb(200, 30, 30);
+        assert_ne!(count("highlight", red), count("highlight", Color32::TRANSPARENT), "the highlight icon lost its bar");
+        assert_eq!(count("highlightNoColor", red), count("highlightNoColor", Color32::TRANSPARENT), "No Color drew a bar");
     }
 }
