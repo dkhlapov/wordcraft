@@ -624,6 +624,11 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.line(&[(6.0, 6.5), (4.5, 9.0), (6.5, 10.0), (9.0, 9.0)]);
             color_bar(pen, a);
         }
+        "highlightNoColor" => {
+            pen.fill(&[(6.0, 6.5), (10.5, 0.75), (13.5, 3.25), (9.0, 9.0)], pen.t);
+            pen.poly(&[(6.0, 6.5), (10.5, 0.75), (13.5, 3.25), (9.0, 9.0)], c);
+            pen.line(&[(6.0, 6.5), (4.5, 9.0), (6.5, 10.0), (9.0, 9.0)]);
+        }
         "fontcolor" => {
             pen.glyph_a(8.0, 10.0, 8.5, c, c);
             color_bar(pen, a);
@@ -2327,6 +2332,7 @@ pub const NAMES: &[&str] = &[
     "case",
     "clear",
     "highlight",
+    "highlightNoColor",
     "fontcolor",
     "effects",
     "launcher",
@@ -2716,5 +2722,24 @@ mod tests {
         let fallback = shapes_of(&ctx, "\u{0}no such icon");
         let missing: Vec<&str> = NAMES.iter().copied().filter(|n| shapes_of(&ctx, n) == fallback).collect();
         assert!(missing.is_empty(), "icons drawn as the fallback: {missing:?}");
+    }
+
+    /// Does the icon draw a colour bar in the accent colour?
+    fn draws_colour_bar(name: &str) -> bool {
+        let ctx = egui::Context::default();
+        let accent = Color32::from_rgb(0xF2, 0xC8, 0x11);
+        let output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            paint(ui.painter(), Rect::from_min_size(Pos2::ZERO, egui::vec2(20.0, 20.0)), name, Color32::BLACK, accent);
+        });
+        let found = output.shapes.iter().any(|shape| matches!(&shape.shape, Shape::Rect(rect) if rect.fill == accent));
+        output.drop_without_applying_deltas();
+        found
+    }
+
+    /// #4087: No Color uses the pen-only icon, without the colour bar.
+    #[test]
+    fn no_colour_highlight_icon_has_no_colour_bar() {
+        assert!(draws_colour_bar("highlight"));
+        assert!(!draws_colour_bar("highlightNoColor"));
     }
 }
