@@ -1647,10 +1647,7 @@ mod tests {
         assert_eq!(split_colors(true, Some(red), &t), (t.icon, red));
         assert_eq!(split_colors(true, None, &t), (t.icon, t.accent));
         assert_eq!(split_colors(false, Some(red), &t), (t.text_disabled, t.text_disabled));
-        // The ribbon's swatches are the last highlight and shading colours.
-        let yellow = wordcraft_doc::props::Highlight::Yellow.rgb().map(crate::theme::c32);
-        assert_eq!(crate::ribbon::highlight_swatch("yellow"), yellow);
-        assert_eq!(crate::ribbon::highlight_swatch("none"), None);
+        // The Shading button's swatch is the last shading colour.
         assert_eq!(crate::ribbon::shading_swatch("FF0000"), Some(Color32::from_rgb(255, 0, 0)));
         assert_eq!(crate::ribbon::shading_swatch("not a colour"), None);
     }

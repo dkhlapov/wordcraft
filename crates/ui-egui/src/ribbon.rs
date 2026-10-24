@@ -1084,11 +1084,6 @@ fn painter_double_click(app: &mut WordApp) {
     let _ = app.run("edit.formatPainter", json!({"sticky": true}));
 }
 
-/// The Text Highlight Color button's bar: the last highlight used (an OOXML name), if it has a colour.
-pub(crate) fn highlight_swatch(name: &str) -> Option<egui::Color32> {
-    wordcraft_doc::props::Highlight::ALL.iter().find(|h| h.ooxml() == name).and_then(|h| h.rgb()).map(crate::theme::c32)
-}
-
 /// The Shading button's bar: the last shading used (hex), if it parses.
 pub(crate) fn shading_swatch(hex: &str) -> Option<egui::Color32> {
     wordcraft_doc::Rgb::parse(hex).map(crate::theme::c32)
