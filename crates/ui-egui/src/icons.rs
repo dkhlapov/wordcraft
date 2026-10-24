@@ -636,6 +636,10 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.line(&[(6.0, 6.5), (4.5, 9.0), (6.5, 10.0), (9.0, 9.0)]);
             color_bar(pen, a);
         }
+        "highlightNoColor" => {
+            pen.fill(&[(5.0, 12.0), (11.0, 4.0), (14.0, 7.0), (8.0, 15.0)], c);
+            pen.line(&[(5.0, 12.0), (3.5, 15.0), (8.0, 15.0)]);
+        }
         "fontcolor" => {
             pen.glyph_a(8.0, 10.0, 8.5, c, c);
             color_bar(pen, a);
@@ -2366,6 +2370,7 @@ pub const NAMES: &[&str] = &[
     "case",
     "clear",
     "highlight",
+    "highlightNoColor",
     "fontcolor",
     "effects",
     "launcher",
@@ -2789,5 +2794,23 @@ mod tests {
         let fallback = shapes_of(&ctx, "\u{0}no such icon");
         let missing: Vec<&str> = NAMES.iter().copied().filter(|n| shapes_of(&ctx, n) == fallback).collect();
         assert!(missing.is_empty(), "icons drawn as the fallback: {missing:?}");
+    }
+
+    fn has_default_highlight_bar(name: &str) -> bool {
+        let ctx = egui::Context::default();
+        let output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            paint(ui.painter(), Rect::from_min_size(Pos2::ZERO, egui::vec2(20.0, 20.0)), name, Color32::BLACK, Color32::from_rgb(0xF2, 0xC8, 0x11));
+        });
+        let yellow = Color32::from_rgb(0xF2, 0xC8, 0x11);
+        let found = output.shapes.iter().any(|shape| matches!(&shape.shape, Shape::Rect(rect) if rect.fill == yellow));
+        output.drop_without_applying_deltas();
+        found
+    }
+
+    /// #4087: No Color uses the pen-only icon, not the ordinary icon's yellow fallback bar.
+    #[test]
+    fn no_colour_highlight_icon_has_no_yellow_bar() {
+        assert!(has_default_highlight_bar("highlight"));
+        assert!(!has_default_highlight_bar("highlightNoColor"));
     }
 }
