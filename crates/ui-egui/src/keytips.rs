@@ -25,11 +25,11 @@ pub fn rects_id() -> egui::Id {
 }
 /// The phase whose first control still has to take the keyboard focus (#1012).
 fn focus_pending_id() -> egui::Id {
-    egui::Id::new("wc_keytips_focus_pending")
+    egui::Id::unique("wc_keytips_focus_pending")
 }
 /// The ribbon control keytips gave the keyboard focus to.
 fn focused_id() -> egui::Id {
-    egui::Id::new("wc_keytips_focused")
+    egui::Id::unique("wc_keytips_focused")
 }
 
 /// Keytips move the keyboard focus (what screen readers follow) as they go (#1012): Alt or F10
