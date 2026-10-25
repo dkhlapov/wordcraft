@@ -10577,3 +10577,114 @@ fn export_png_refuses_a_path_that_is_not_png() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn style_set_keeps_imported_styles_latent_styles_and_defaults() {
+    use wordcraft_doc::props::{Rgb, TextColor};
+    use wordcraft_doc::styles::{Style, StyleKind};
+    for name in ["basic", "lines", "shaded", "casual", "centered", "minimalist", "title"] {
+        let mut s = s();
+        let mut body = s.doc.styles.get("Normal").unwrap().clone();
+        body.id = "BodyText".into();
+        body.name = "Body Text".into();
+        body.builtin = true;
+        body.based_on = Some("Normal".into());
+        body.chr.size = Some(20.0);
+        body.chr.color = Some(TextColor::Rgb(Rgb(0xFF, 0, 0)));
+        let grid = Style { id: "GridTable4".into(), name: "Grid Table 4".into(), kind: StyleKind::Table, builtin: true, ..Default::default() };
+        s.doc.styles.styles.push(body.clone());
+        s.doc.styles.styles.push(grid.clone());
+        s.doc.styles.latent_styles = Some("<w:latentStyles/>".into());
+        s.doc.styles.default_chr.lang = Some("de-DE".into());
+        s.doc.styles.default_chr.size = Some(11.0);
+        run(&mut s, "design.styleSet", json!({ "name": name }));
+        assert_eq!(s.doc.styles.get("BodyText"), Some(&body), "{name}: BodyText");
+        assert_eq!(s.doc.styles.get("GridTable4"), Some(&grid), "{name}: GridTable4");
+        assert_eq!(s.doc.styles.latent_styles.as_deref(), Some("<w:latentStyles/>"), "{name}");
+        assert_eq!(s.doc.styles.default_chr.lang.as_deref(), Some("de-DE"), "{name}");
+        assert_eq!(s.doc.styles.default_chr.size, Some(11.0), "{name}");
+        assert_eq!(s.doc.styles.styles.iter().filter(|x| x.id == "Heading1").count(), 1, "{name}");
+        let saved = crate::io::save_bytes("x.docx", &s.doc).unwrap();
+        let back = crate::io::open_bytes("x.docx", &saved).unwrap();
+        assert!(back.styles.get("BodyText").is_some(), "{name}: BodyText after round trip");
+    }
+    let mut s = s();
+    run(&mut s, "design.styleSet", json!({ "name": "title" }));
+    assert_eq!(s.doc.styles.get("Title").unwrap().chr.size, Some(36.0));
+}
+
+fn style_size(s: &Session, id: &str) -> f32 {
+    s.doc.styles.resolve_char(Some(id), &Default::default()).size
+}
+
+#[test]
+fn scale_font_sizes_adds_points_to_every_style() {
+    let mut s = Session::new(crate::sample::sample_document());
+    let ids: Vec<String> = s.doc.styles.styles.iter().map(|x| x.id.clone()).collect();
+    let before: Vec<f32> = ids.iter().map(|i| style_size(&s, i)).collect();
+    let base = s.doc.styles.resolve_char(None, &Default::default()).size;
+    let runs = serde_json::to_string(&s.doc.body).unwrap();
+    run(&mut s, "design.scaleFontSizes", json!({"delta": 2}));
+    // Every style (explicit or inherited) grows by exactly 2, once.
+    for (i, b) in ids.iter().zip(&before) {
+        assert_eq!(style_size(&s, i), b + 2.0, "{i}");
+    }
+    assert_eq!(s.doc.styles.resolve_char(None, &Default::default()).size, base + 2.0);
+    assert_eq!(serde_json::to_string(&s.doc.body).unwrap(), runs, "runs untouched");
+    run(&mut s, "edit.undo", json!({}));
+    for (i, b) in ids.iter().zip(&before) {
+        assert_eq!(style_size(&s, i), *b, "undo {i}");
+    }
+}
+
+#[test]
+fn scale_font_sizes_percent_and_clamp_and_errors() {
+    let mut s = Session::new(crate::sample::sample_document());
+    let n = style_size(&s, "Normal");
+    run(&mut s, "design.scaleFontSizes", json!({"percent": 10}));
+    assert_eq!(style_size(&s, "Normal"), (n * 1.1 * 2.0).round() / 2.0);
+    run(&mut s, "design.scaleFontSizes", json!({"delta": -500}));
+    assert_eq!(style_size(&s, "Normal"), 1.0);
+    for bad in [
+        json!({}),
+        json!({"delta": 1e9}),
+        json!({"percent": -100}),
+        json!({"percent": 1e9}),
+        json!({"delta": "x"}),
+        json!({"delta": 0}),
+        json!({"percent": 0}),
+        json!({"delta": 1, "percent": 10}),
+        json!({"delta": 2, "percent": "x"}),
+        json!({"percent": 10, "delta": null}),
+    ] {
+        assert!(s.run("design.scaleFontSizes", &bad).is_err(), "{bad}");
+    }
+}
+
+#[test]
+fn scale_font_sizes_reaches_char_table_and_cs_sizes_and_unset_default() {
+    use wordcraft_doc::props::CharProps;
+    use wordcraft_doc::{Style, StyleKind, styles::TablePart};
+    let mut s = s();
+    s.doc.styles.default_chr.size = None;
+    s.doc.styles.default_chr.size_cs = Some(10.0);
+    let mut ch = Style { id: "Big".into(), name: "Big".into(), kind: StyleKind::Character, ..Default::default() };
+    ch.chr.size = Some(20.0);
+    ch.chr.size_cs = Some(22.0);
+    let mut tb = Style { id: "Grid".into(), name: "Grid".into(), kind: StyleKind::Table, ..Default::default() };
+    let mut parts = wordcraft_doc::styles::TableStyleParts::default();
+    parts.header_chr.size = Some(14.0);
+    parts.regions.entry(TablePart::Band2Horz).or_default().chr.size = Some(8.0);
+    tb.table = Some(parts);
+    s.doc.styles.styles.extend([ch, tb]);
+    run(&mut s, "design.scaleFontSizes", json!({"delta": 2}));
+    let st = &s.doc.styles;
+    assert_eq!(st.default_chr.size, Some(13.0), "unset default is 11 pt, made explicit");
+    assert_eq!(st.default_chr.size_cs, Some(12.0));
+    let big = CharProps { style: Some("Big".into()), ..Default::default() };
+    assert_eq!(st.resolve_char(None, &big).size, 22.0);
+    assert_eq!(st.resolve_char(None, &big).size_cs, 24.0);
+    let grid = st.styles.iter().find(|x| x.id == "Grid").and_then(|x| x.table.as_ref()).unwrap();
+    assert_eq!(grid.header_chr.size, Some(16.0));
+    assert_eq!(grid.regions.get(&TablePart::Band2Horz).unwrap().chr.size, Some(10.0));
+}
