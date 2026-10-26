@@ -171,7 +171,7 @@ fn the_save_changes_prompt_warns_before_saving_to_rtf() {
         a.run("review.newComment", json!({"text": "Hm"})).unwrap();
         let before = std::fs::read(&file).unwrap();
         pick(&mut a, vec![dir.join("draft.docx")]);
-        a.run("file.new", json!({})).unwrap();
+        a.run("file.close", json!({})).unwrap();
         assert_eq!(prompt(&a), Some("saveChanges"));
         a.run("ui.saveChanges", json!({"answer": "save"})).unwrap();
         assert_eq!(prompt(&a), Some("formatLosses"), "{answer}");
@@ -197,7 +197,7 @@ fn a_failed_continue_restores_the_save_changes_prompt() {
     let dir = scratch("failed-continue");
     let mut a = draft(true);
     pick(&mut a, vec![dir.join("no-such-folder").join("draft.rtf")]);
-    a.run("file.new", json!({})).unwrap();
+    a.run("file.close", json!({})).unwrap();
     assert_eq!(prompt(&a), Some("saveChanges"));
     a.run("ui.saveChanges", json!({"answer": "save"})).unwrap();
     assert_eq!(prompt(&a), Some("formatLosses"));
