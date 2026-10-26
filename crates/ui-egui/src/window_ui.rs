@@ -267,6 +267,7 @@ impl WordApp {
             read_aloud_skip_citations: _,
             keytips_enabled: _,
             dark_page: _,
+            never_change_page: _,
             check_spelling: _,
             caret_animation: _,
             keyboard: _,
