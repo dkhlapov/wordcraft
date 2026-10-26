@@ -120,7 +120,11 @@ const TICK: Duration = Duration::from_millis(100);
 
 /// Run `command`, answering every call with `answer`.
 pub fn run_command(opts: &Options, command: Command, answer: &mut dyn FnMut(&Call) -> Result<Value, String>) -> Result<Outcome, ZoteroError> {
+    crate::peer::check_addr(&opts.addr)?;
     let stream = TcpStream::connect_timeout(&opts.addr, opts.connect_timeout).map_err(|e| ZoteroError::NotRunning(e.to_string()))?;
+    // Before Zotero sees anything: the command, and then the document, go only to this computer
+    // and, on Linux only, not to a listener the socket table shows belongs to another user.
+    crate::peer::check(&stream)?;
     let _ = stream.set_nodelay(true);
     let mut link = Link::new(&stream, opts);
     link.start_write();
