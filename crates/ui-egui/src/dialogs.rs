@@ -2159,7 +2159,7 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                     // Outline level, and "Collapsed by default" beside it: greyed for body text,
                     // as in Word (#1745).
                     ui.horizontal(|ui| {
-                        ui.label(format!("{}:", tl!("Outline level")));
+                        let outline_label = ui.label(format!("{}:", tl!("Outline level")));
                         let name = |l: u8| {
                             if l >= BODY_LEVEL {
                                 tl!("Body Text").to_string()
@@ -2168,13 +2168,14 @@ fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                             }
                         };
                         let shown = if mixed.contains("outlineLevel") { String::new() } else { name(*outline) };
-                        egui::ComboBox::from_id_salt("para_outline").selected_text(shown).show_ui(ui, |ui| {
+                        let combo = egui::ComboBox::from_id_salt("para_outline").selected_text(shown).show_ui(ui, |ui| {
                             for l in std::iter::once(BODY_LEVEL).chain(0..BODY_LEVEL) {
                                 if ui.selectable_value(outline, l, name(l)).clicked() {
                                     mixed.remove("outlineLevel");
                                 }
                             }
                         });
+                        combo.response.labelled_by(outline_label.id);
                         let heading = *outline < BODY_LEVEL && !mixed.contains("outlineLevel");
                         ui.add_enabled_ui(heading, |ui| para_check(ui, collapsed, tl!("Collapsed by default"), "collapsed", mixed));
                     });
