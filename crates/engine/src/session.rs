@@ -2223,7 +2223,6 @@ impl Session {
                     if crate::cmd::outline::show_selection(self) {
                         self.touch();
                     }
-                    }
                 }
                 let mut ime_outcome = self.ime_edit_outcome;
                 if ime_outcome.content_changed {

@@ -785,7 +785,7 @@ fn enter(s: &mut Session, undo_step: bool) -> Result<(), CmdError> {
     // Enter at the end of a collapsed heading only expands it (Word for Mac, #1745).
     if s.sel.is_collapsed() && fold_at_end(s) {
         super::outline::expand_heading(s, s.sel.focus.path.last());
-        return sel_result(s);
+        return Ok(());
     }
     let mut at = delete_selection(s)?;
     let auto = border_line(s, &at)
