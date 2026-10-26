@@ -2703,7 +2703,7 @@ mod tests {
         let mut out = String::new();
         let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
         let mut full = ctx.run_ui(input, |ui| {
-            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
             paint(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), name, Color32::from_gray(66), Color32::from_rgb(59, 91, 219));
         });
         for s in std::mem::take(&mut full.shapes) {
@@ -2777,7 +2777,7 @@ mod tests {
         let draw = |disabled: bool| {
             let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
             let mut full = ctx.run_ui(input, |ui| {
-                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
                 paint_state(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), "highlight", ink, ink, disabled);
             });
             let out: String = std::mem::take(&mut full.shapes).iter().map(|s| format!("{:?}", s.shape)).collect();
@@ -2794,7 +2794,7 @@ mod tests {
         let draw = |accent: Color32| {
             let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
             let full = ctx.run_ui(input, |ui| {
-                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
                 paint_state(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), "shading", Color32::from_gray(66), accent, false);
             });
             let n = full.shapes.len();
@@ -2811,7 +2811,7 @@ mod tests {
         let count = |name: &str, accent: Color32| {
             let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
             let full = ctx.run_ui(input, |ui| {
-                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+                let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
                 paint_state(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), name, Color32::from_gray(66), accent, false);
             });
             let n = full.shapes.len();
