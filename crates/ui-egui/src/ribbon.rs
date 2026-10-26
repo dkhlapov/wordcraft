@@ -2398,6 +2398,16 @@ fn view(app: &mut WordApp, ui: &mut Ui) {
         big(ui, app, "newWindow", "New\nWindow", "view.newWindow", json!({}), false);
         big(ui, app, "arrangeAll", "Arrange\nAll", "view.arrangeAll", json!({}), false);
         big(ui, app, "split", "Split", "view.split", json!({}), false);
+        menu_button(
+            ui,
+            app,
+            "switchWindows",
+            Some("Switch\nWindows"),
+            "Switch Windows",
+            true,
+            "view.switchWindows",
+            crate::documents::switch_windows_menu,
+        );
         big_toggle(ui, app, "fullScreen", "Full\nScreen", "view.fullScreen", v.full_screen);
     });
     group(ui, "Macros", None, app, |ui, app| {
@@ -2469,6 +2479,7 @@ fn outlining(app: &mut WordApp, ui: &mut Ui) {
 fn help(app: &mut WordApp, ui: &mut Ui) {
     group(ui, "Help", None, app, |ui, app| {
         big(ui, app, "help", "Help", "ui.dialog", json!({"name": "about"}), false);
+        big(ui, app, "checkForUpdates", "Check for\nUpdates…", "ui.checkForUpdates", json!({}), false);
         big(ui, app, "discord", "Community\nDiscord", "ui.discord", json!({}), false);
     });
     group(ui, "Agents", None, app, |ui, app| {
