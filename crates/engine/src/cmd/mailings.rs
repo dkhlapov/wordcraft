@@ -1132,10 +1132,8 @@ fn finish_within(s: &mut Session, v: &Value, max_blocks: usize) -> CmdResult {
         r["path"] = json!(path);
         return Ok(r);
     }
-    s.set_document(out);
-    s.path = None;
+    s.add_document(out);
     s.dirty = true;
-    s.merge.preview = false;
     Ok(r)
 }
 
@@ -1297,8 +1295,7 @@ fn envelopes(s: &mut Session, v: &Value) -> CmdResult {
     let mut d = Document::new();
     d.last_section = sect;
     d.body = blocks;
-    s.set_document(d);
-    s.path = None;
+    s.add_document(d);
     Ok(json!({"width": w, "height": h}))
 }
 
@@ -1530,8 +1527,7 @@ fn labels(s: &mut Session, v: &Value) -> CmdResult {
         }
     }
     d.body = vec![std::sync::Arc::new(Block::Table(t)), para_block(Paragraph::new())];
-    s.set_document(d);
-    s.path = None;
+    s.add_document(d);
     let _ = Pos::body(0, 0);
     Ok(json!({"labels": if single.is_some() { 1 } else { rows * cols }, "filled": made, "product": prod.id}))
 }
