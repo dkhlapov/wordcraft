@@ -59,9 +59,7 @@ use navigation::{scrollbar_page_tip, viewed_page};
 #[cfg(test)]
 use pages::{DRAWING_GRID_MAX_LINES, DRAWING_GRID_MIN_PX};
 pub(crate) use pages::{PageKeys, page_doc, page_render_options, page_screen_scale, preview_sel, screen_render_options, view_key};
-use pages::{
-    drawing_grid, drawing_grid_step, gridline_cells, page_image, page_key, shown_layout, texel_aligned_rect, visible_tiles,
-};
+use pages::{drawing_grid, drawing_grid_step, gridline_cells, page_image, page_key, shown_layout, texel_aligned_rect, visible_tiles};
 pub(crate) use reading::turn_read_page;
 #[cfg(test)]
 use reading::{READ_NAV_BAR, RESIZE_SETTLE, place_read_pages};
