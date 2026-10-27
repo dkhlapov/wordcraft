@@ -465,7 +465,6 @@ impl WordApp {
         }
     }
 
-
     /// Why AutoSave can't cover the document, or `None` when it can: it writes only a file the
     /// user saved to in this session, in a format that keeps everything, and never in the browser
     /// (a page can't write to the user's files; saving there is a download, #176).
@@ -506,7 +505,6 @@ impl WordApp {
         }
         lose
     }
-
 
     /// Whether AutoSave covers the document: it is on and nothing blocks it ([`Self::autosave_block`]).
     pub fn autosaves(&self) -> bool {
