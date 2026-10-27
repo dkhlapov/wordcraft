@@ -44,9 +44,13 @@ sys-locale = { version = "0.3", features = ["js"] }
 zbus = "=5.19.0"
 
 # Comment times in the user's own time zone (`local_time.rs`); the web app asks the browser.
+# The LanguageTool API key in the system's credential store (#764): Keychain on macOS, Credential
+# Manager on Windows, the Secret Service on Linux and the BSDs (pure Rust over zbus, no libdbus).
+# Browsers have none: there the key stays in the settings, as before.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
 craft-update = { workspace = true }
+keyring = "4.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # The browser clock (`SystemTime::now()`/`Instant::now()` panic on wasm32).

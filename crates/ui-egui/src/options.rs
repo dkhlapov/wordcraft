@@ -459,6 +459,7 @@ fn language_tool(app: &mut WordApp, ui: &mut Ui) {
         }
     }
     ui.data_mut(|d| d.insert_temp(id, draft));
+    ui.label(egui::RichText::new(api_key_note(app)).small().weak());
     let s = &app.ui.language_tool;
     let current = s.language.clone();
     let label = |code: &str| match code {
@@ -478,6 +479,26 @@ fn language_tool(app: &mut WordApp, ui: &mut Ui) {
     });
     if let Some(line) = crate::languagetool::status_line(app) {
         ui.label(egui::RichText::new(line).small());
+    }
+}
+
+/// Where the LanguageTool API key is kept (#764): the system's credential store, or WordCraft's
+/// settings file where there is none or it refused the key.
+pub(crate) fn api_key_note(app: &WordApp) -> String {
+    use crate::LtKeyError;
+    match (&app.services.secrets, &app.lt_key.error) {
+        (None, _) => tl!("This system has no credential store, so the API key is saved in WordCraft's settings file.").to_string(),
+        (Some(_), Some(LtKeyError::Store(e))) => crate::i18n::fmt(
+            tl!("The system's credential store could not keep the API key ({error}), so it is saved in WordCraft's settings file."),
+            &[("error", e)],
+        ),
+        (Some(_), Some(LtKeyError::Lost)) => {
+            tl!("The system's credential store no longer has the API key. Enter it again to keep checking with LanguageTool.").to_string()
+        }
+        (Some(_), Some(LtKeyError::NotRemoved(e))) => {
+            crate::i18n::fmt(tl!("The old API key is still in the system's credential store: it could not be removed ({error})."), &[("error", e)])
+        }
+        (Some(_), None) => tl!("The API key is kept in the system's credential store.").to_string(),
     }
 }
 

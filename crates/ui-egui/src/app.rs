@@ -124,6 +124,7 @@ impl WordApp {
             autosave: true,
             zotero: zotero::ZoteroLink::default(),
             language_tool: languagetool::LtLink::default(),
+            lt_key: LtKeyPlace::default(),
             ctx: None,
             ime_origin: false,
             read_aloud_error: None,
