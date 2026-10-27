@@ -16,8 +16,8 @@ use wordcraft_doc::para::Float;
 
 use super::PartRels;
 use crate::package::{
-    CUSTOM_XML_ROOTS, EMBEDDED_PARTS, EmbeddedManifest, FONT_TABLE_PART, MAX_DROPPED, MAX_EMBEDDED_PARTS, MAX_EMBEDDED_RELS, VBA_PROJECT_PART,
-    VBA_RELATED, rel_is, relative, rt,
+    CUSTOM_XML_ROOTS, EMBEDDED_PARTS, EmbeddedManifest, MAX_DROPPED, MAX_EMBEDDED_PARTS, MAX_EMBEDDED_RELS, VBA_PROJECT_PART, VBA_RELATED, rel_is,
+    relative, rt,
 };
 use crate::units::{MAX_LEN_PT, emu, int};
 use crate::xml::{self, El, MAX_DEPTH};
@@ -140,7 +140,8 @@ impl<'d> EmbedWriter<'d> {
             return;
         }
         let mut written = Vec::new();
-        if let Some(name) = self.copy_tree(FONT_TABLE_PART, &mut HashMap::new(), &mut written) {
+        let Some(root) = crate::package::font_table_key(self.passthrough).map(str::to_string) else { return };
+        if let Some(name) = self.copy_tree(&root, &mut HashMap::new(), &mut written) {
             rels.add(rt::FONT_TABLE, &relative(STORY_PART, &name), false);
         }
     }
@@ -975,7 +976,25 @@ fn scrub_private(bytes: &[u8], names: bool, dates: bool) -> Option<Vec<u8>> {
                         b"date" if dates && wml_attr => None,
                         b"dateUtc" if dates => None,
                         _ => {
-                            el.push_attribute(a);
+                            // `push_attribute` writes the value as given, inside `"`. In well-formed
+                            // markup the raw value holds no `<` and every `&` starts a valid
+                            // reference, so only a `"` from a single-quoted value needs escaping;
+                            // references such as `&#10;` stay as written (#3872).
+                            let raw = a.value.as_ref();
+                            let value = if raw.contains(&b'"') {
+                                let mut v = Vec::with_capacity(raw.len() + 8);
+                                for &c in raw {
+                                    if c == b'"' {
+                                        v.extend_from_slice(b"&quot;");
+                                    } else {
+                                        v.push(c);
+                                    }
+                                }
+                                Cow::Owned(v)
+                            } else {
+                                Cow::Borrowed(raw)
+                            };
+                            el.push_attribute(Attribute { key: a.key, value });
                             continue;
                         }
                     };
