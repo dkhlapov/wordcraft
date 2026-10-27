@@ -16,6 +16,8 @@ mod fonts;
 mod package;
 mod read;
 mod smart_art;
+#[cfg(test)]
+mod test_log;
 mod theme;
 mod units;
 mod wordml2003;
