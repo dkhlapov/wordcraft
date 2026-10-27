@@ -2,6 +2,8 @@
 //! network. Requests are paced ([`Pacing`]): LanguageTool's hosted service allows about 20
 //! requests a minute for free use, and asks clients to back off when they send more.
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
 use std::time::{Duration, Instant};
 
@@ -51,10 +53,18 @@ impl Pacing {
 /// tests).
 pub type Transport = Box<dyn FnMut(&Request) -> Result<String, LtError> + Send>;
 
-/// The checking thread. Dropping it lets the thread finish its current request and end.
+/// The checking thread. Dropping it cancels the queued paragraphs (none is sent to the server
+/// afterwards) and lets the thread finish its current request and end.
 pub struct Worker {
     jobs: Sender<Job>,
     done: Receiver<Done>,
+    cancelled: Arc<AtomicBool>,
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        self.cancelled.store(true, Ordering::Release);
+    }
 }
 
 impl Worker {
@@ -66,11 +76,13 @@ impl Worker {
         }
         let (jobs, job_rx) = channel::<Job>();
         let (done_tx, done) = channel::<Done>();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let thread_cancelled = Arc::clone(&cancelled);
         std::thread::Builder::new()
             .name("languagetool".into())
-            .spawn(move || run(&settings, pacing, transport, &job_rx, &done_tx, wake.as_ref()))
+            .spawn(move || run(&settings, pacing, transport, &job_rx, &done_tx, wake.as_ref(), &thread_cancelled))
             .map_err(|e| LtError::Network(format!("couldn't start the checker: {e}")))?;
-        Ok(Worker { jobs, done })
+        Ok(Worker { jobs, done, cancelled })
     }
 
     /// The desktop app's worker: real HTTP.
@@ -101,9 +113,22 @@ impl Worker {
     }
 }
 
-fn run(settings: &Settings, pacing: Pacing, mut transport: Transport, jobs: &Receiver<Job>, done: &Sender<Done>, wake: &dyn Fn()) {
+fn run(
+    settings: &Settings,
+    pacing: Pacing,
+    mut transport: Transport,
+    jobs: &Receiver<Job>,
+    done: &Sender<Done>,
+    wake: &dyn Fn(),
+    cancelled: &AtomicBool,
+) {
     let mut next_at: Option<Instant> = None;
     while let Ok(job) = jobs.recv() {
+        // The worker was dropped (new settings, checking turned off, the window closed): the
+        // paragraphs still queued are not sent to the server.
+        if cancelled.load(Ordering::Acquire) {
+            break;
+        }
         // Pacing covers every request, including the automatic-language retry.
         let result = crate::check_with(
             settings,
@@ -113,6 +138,9 @@ fn run(settings: &Settings, pacing: Pacing, mut transport: Transport, jobs: &Rec
                     if at > now {
                         std::thread::sleep(at - now);
                     }
+                }
+                if cancelled.load(Ordering::Acquire) {
+                    return Err(LtError::Network("checking was cancelled".into()));
                 }
                 let r = transport(req);
                 let limited = r == Err(LtError::RateLimited);
