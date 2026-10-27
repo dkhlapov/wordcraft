@@ -31,8 +31,8 @@ mod settings;
 mod styles;
 
 pub(crate) use bibliography::from_source_type;
-pub(crate) use parts::{write_parts, write_parts_report};
 use parts::{content_type_for, push_part, sniff};
+pub(crate) use parts::{write_parts, write_parts_report};
 use settings::note_id_base;
 pub(crate) use settings::{ANONYMOUS_AUTHOR, ANONYMOUS_INITIALS, annotation_author, durable_id_ok};
 use styles::{numbering_xml, styles_xml};
