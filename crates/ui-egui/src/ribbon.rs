@@ -61,8 +61,8 @@ use review::{developer, help, review};
 #[cfg(test)]
 pub(crate) use shape::gradient_menu;
 use shape::shape_format;
-use table::{table_design, table_layout};
 pub(crate) use table::border_styles_gallery;
+use table::{table_design, table_layout};
 #[cfg(test)]
 use tabs::MIN_TAB_W;
 use tabs::{MORE_TABS_W, reading_toolbar};

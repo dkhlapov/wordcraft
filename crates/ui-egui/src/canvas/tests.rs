@@ -2936,11 +2936,7 @@ fn the_context_menu_in_a_table_follows_the_selection() {
     h.state_mut().run("table.selectTable", json!({})).unwrap();
     right_click(&mut h, at);
     assert!(h.state().session.cell_range().is_some(), "a right-click on the selected table keeps it");
-    assert_menu(
-        &h,
-        &["Delete", "Distribute Rows", "Distribute Columns", "AutoFit", "Border Styles", "Insert Caption…", "Table Properties…"],
-        true,
-    );
+    assert_menu(&h, &["Delete", "Distribute Rows", "Distribute Columns", "AutoFit", "Border Styles", "Insert Caption…", "Table Properties…"], true);
     assert_menu(&h, &["Split Cells", "Merge Cells"], false);
     pick(&mut h, &["Delete", "Delete Table"]);
     assert!(h.state().session.doc.body.iter().all(|b| b.as_table().is_none()));
