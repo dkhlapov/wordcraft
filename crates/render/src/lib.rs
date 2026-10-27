@@ -927,7 +927,6 @@ fn shadow_and_glow(
     }
 }
 
-
 /// The line through an ink stroke's points (finite ones only); a single point is a dot.
 fn ink_path(pts: &[(f32, f32)]) -> Option<BezPath> {
     let mut p = BezPath::new();
