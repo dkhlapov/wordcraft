@@ -185,6 +185,34 @@ fn credentials_go_in_the_body_only_when_both_are_set_and_never_in_debug() {
 // ---- settings ----
 
 #[test]
+fn credentials_never_go_over_plain_http_to_another_host() {
+    let acct = |server: &str, user: &str| Settings {
+        server: server.into(),
+        username: user.into(),
+        api_key: if user.is_empty() { String::new() } else { "k".into() },
+        ..on()
+    };
+    assert!(matches!(acct("http://lt.example.org", "u").endpoint(), Err(LtError::BadServer(_))));
+    assert!(matches!(acct("HTTP://lt.example.org:8081/v2", "u").endpoint(), Err(LtError::BadServer(_))));
+    assert!(acct("https://lt.example.org", "u").endpoint().is_ok());
+    for ok in ["http://localhost:8081", "http://127.0.0.1:8081", "http://[::1]:8081"] {
+        assert!(acct(ok, "u").endpoint().is_ok(), "{ok}");
+    }
+    for bad in [
+        "http://127.0.0.1@attacker.example",
+        "http://127.attacker.example",
+        "http://localhost@evil.example:80",
+        "http://127.0.0.1.evil.example",
+        "http://127.0.0.1\\@evil.example",
+        "http://evil.example\\@127.0.0.1",
+    ] {
+        assert!(matches!(acct(bad, "u").endpoint(), Err(LtError::BadServer(_))), "{bad}");
+    }
+    // Without an account nothing secret is sent, so plain http stays allowed.
+    assert!(acct("http://lt.example.org", "").endpoint().is_ok());
+}
+
+#[test]
 fn server_addresses_normalise_to_the_check_endpoint() {
     let ep = |s: &str| Settings { server: s.into(), ..on() }.endpoint();
     assert_eq!(ep("").unwrap(), "https://api.languagetool.org/v2/check");
@@ -278,6 +306,33 @@ fn the_worker_checks_in_the_background_and_backs_off_when_limited() {
     }
     assert_eq!(*woken.lock().unwrap(), 2);
     assert_eq!(w.try_recv(), Ok(None));
+}
+
+#[test]
+fn dropping_the_worker_cancels_the_queued_paragraphs() {
+    let (started_tx, started) = std::sync::mpsc::channel::<()>();
+    let (release_tx, release) = std::sync::mpsc::channel::<()>();
+    let calls = Arc::new(Mutex::new(Vec::<String>::new()));
+    let log = calls.clone();
+    let transport: worker::Transport = Box::new(move |r: &Request| {
+        let text = form(&r.body).into_iter().find(|(k, _)| k == "text").map(|(_, v)| v).unwrap_or_default();
+        log.lock().unwrap().push(text);
+        let _ = started_tx.send(());
+        let _ = release.recv_timeout(Duration::from_secs(10));
+        Ok(answer(json!([])))
+    });
+    let pacing = Pacing { gap: Duration::from_millis(1), backoff: Duration::from_millis(1), timeout: Duration::from_secs(1) };
+    let w = Worker::spawn(on(), pacing, transport, Box::new(|| {})).unwrap();
+    for text in ["first", "second", "third"] {
+        assert!(w.send(Job { text: text.into(), language: "auto".into() }));
+    }
+    // The first request is in flight; the other two are queued.
+    started.recv_timeout(Duration::from_secs(10)).unwrap();
+    drop(w);
+    release_tx.send(()).unwrap();
+    // The thread ends (the transport, and its sender, are dropped with it) without sending more.
+    assert!(started.recv_timeout(Duration::from_secs(10)).is_err());
+    assert_eq!(*calls.lock().unwrap(), ["first"]);
 }
 
 #[test]
