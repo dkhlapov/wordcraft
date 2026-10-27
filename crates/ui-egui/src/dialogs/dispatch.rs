@@ -546,7 +546,7 @@ pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                     MultiplePages::BookFold => tl!("Book fold"),
                 };
                 let shown = name(*multiple, *reverse);
-                let combo = egui::ComboBox::from_id_salt("ps_multiple").width(180.0).selected_text(shown).show_ui(ui, |ui| {
+                let combo = craft_ui::ComboBox::from_id_salt("ps_multiple").width(180.0).selected_text(shown).show_ui(ui, |ui| {
                     for (m, rev) in [
                         (MultiplePages::Normal, false),
                         (MultiplePages::Mirror, false),
@@ -567,7 +567,7 @@ pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                 ui.horizontal(|ui| {
                     let label = ui.label(tl!("Sheets per booklet:"));
                     let shown = if *sheets == 0 { tl!("All").to_string() } else { sheets.to_string() };
-                    let combo = egui::ComboBox::from_id_salt("ps_sheets").width(80.0).selected_text(shown).show_ui(ui, |ui| {
+                    let combo = craft_ui::ComboBox::from_id_salt("ps_sheets").width(80.0).selected_text(shown).show_ui(ui, |ui| {
                         for n in booklet_sheet_choices(*sheets) {
                             ui.selectable_value(sheets, n, if n == 0 { tl!("All").to_string() } else { n.to_string() });
                         }
