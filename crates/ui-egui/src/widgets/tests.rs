@@ -32,7 +32,7 @@ fn doc_app() -> WordApp {
 #[test]
 fn a_press_on_a_disabled_split_button_runs_nothing() {
     use serde_json::json;
-    let probe = egui::Id::new("split_probe");
+    let probe = egui::Id::unique("split_probe");
     let build = |app: WordApp| {
         egui_kittest::Harness::builder().with_size(egui::vec2(300.0, 100.0)).build_ui_state(
             move |ui, app: &mut WordApp| {
@@ -68,11 +68,11 @@ fn a_press_on_a_disabled_split_button_runs_nothing() {
 /// dialog.
 #[test]
 fn the_group_launcher_takes_a_press_in_its_outer_margin() {
-    let launcher = |ui: &egui::Ui| ui.id().with(("launch", "Page Setup"));
+    let launcher = |ui: &egui::Ui| ui.scope_id().with(("launch", "Page Setup"));
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(300.0, 120.0)).build_ui_state(
         move |ui, app: &mut WordApp| {
             let id = launcher(ui);
-            ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("launcher_probe"), id));
+            ui.ctx().data_mut(|d| d.insert_temp(egui::Id::unique("launcher_probe"), id));
             group_titled(ui, "Page Setup", "Page Setup", Some("layout.pageSetup"), app, |ui, _| {
                 ui.allocate_space(vec2(60.0, 10.0));
             });
@@ -80,7 +80,7 @@ fn the_group_launcher_takes_a_press_in_its_outer_margin() {
         doc_app(),
     );
     h.run_steps(3);
-    let id = h.ctx.data(|d| d.get_temp::<egui::Id>(egui::Id::new("launcher_probe"))).expect("the group was drawn");
+    let id = h.ctx.data(|d| d.get_temp::<egui::Id>(egui::Id::unique("launcher_probe"))).expect("the group was drawn");
     let lr = h.ctx.read_response(id).expect("the launcher was laid out").rect;
     assert_eq!(lr.size(), vec2(16.0, 16.0));
     assert!(h.state().dialog.is_none());
