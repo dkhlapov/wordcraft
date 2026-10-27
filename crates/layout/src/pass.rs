@@ -198,9 +198,9 @@ pub(crate) fn layout_pass(
     let can_resume = !reflow
         && outline.is_none()
         && turned.iter().all(Option::is_none)
-        && incremental_ok(doc, &sections)
+        && incremental_ok(doc, sections)
         && !prev.as_ref().is_some_and(|p| p.uses_totals);
-    let plan = if can_resume { prev.as_ref().and_then(|p| p.plan(&key, opts.typing_word, doc, &sections)) } else { None };
+    let plan = if can_resume { prev.as_ref().and_then(|p| p.plan(&key, opts.typing_word, doc, sections)) } else { None };
     let mut resume = None;
     let mut converge_after = None;
     if let Some(plan) = plan {
@@ -213,7 +213,7 @@ pub(crate) fn layout_pass(
         }
         converge_after = plan.converge_after;
     }
-    let mut pass = incremental::Pass::new(key, opts.typing_word, doc, &sections);
+    let mut pass = incremental::Pass::new(key, opts.typing_word, doc, sections);
     if let (Some(p), Some(st)) = (&prev, &resume) {
         pass.checkpoints = p.checkpoints.iter().filter(|c| c.state.block < st.block).cloned().collect();
     }
