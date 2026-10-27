@@ -16,8 +16,8 @@ use wordcraft_doc::para::Float;
 
 use super::PartRels;
 use crate::package::{
-    CUSTOM_XML_ROOTS, EMBEDDED_PARTS, EmbeddedManifest, MAX_DROPPED, MAX_EMBEDDED_PARTS, MAX_EMBEDDED_RELS, VBA_PROJECT_PART, VBA_RELATED, rel_is,
-    relative, rt,
+    CUSTOM_XML_ROOTS, EMBEDDED_PARTS, EmbeddedManifest, FONT_TABLE_PART, MAX_DROPPED, MAX_EMBEDDED_PARTS, MAX_EMBEDDED_RELS, VBA_PROJECT_PART,
+    VBA_RELATED, rel_is, relative, rt,
 };
 use crate::units::{MAX_LEN_PT, emu, int};
 use crate::xml::{self, El, MAX_DEPTH};
