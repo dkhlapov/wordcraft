@@ -2731,7 +2731,7 @@ mod tests {
         let mut out = String::new();
         let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
         let mut full = ctx.run_ui(input, |ui| {
-            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
             paint(&painter, Rect::from_min_size(Pos2::ZERO, vec2(32.0, 32.0)), name, Color32::from_gray(66), Color32::from_rgb(59, 91, 219));
         });
         for s in std::mem::take(&mut full.shapes) {
@@ -2776,7 +2776,7 @@ mod tests {
         let side = crate::widgets::DROPDOWN;
         let input = egui::RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(64.0, 64.0))), ..Default::default() };
         let mut full = ctx.run_ui(input, |ui| {
-            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("icon")));
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("icon")));
             paint(&painter, Rect::from_min_size(Pos2::ZERO, vec2(side, side)), "dropdown", Color32::from_gray(66), Color32::from_gray(66));
         });
         let shapes = std::mem::take(&mut full.shapes);
