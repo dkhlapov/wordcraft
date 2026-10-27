@@ -19,7 +19,11 @@ use wordcraft_doc::section::{PageVAlign, SectionProps};
 use wordcraft_doc::{Block, Document};
 use wordcraft_geom::Rect;
 
-use crate::{Ctx, LayoutOptions, NoteBox, Page, PageBuilder, Placed, ViewMode, hash_of};
+use crate::cache::hash_of;
+use crate::ctx::Ctx;
+use crate::notes::NoteBox;
+use crate::page::PageBuilder;
+use crate::{LayoutOptions, Page, Placed, ViewMode};
 
 /// The paging state between two body blocks: everything placing the following blocks reads
 /// besides the document and the caches.
@@ -39,7 +43,7 @@ pub(crate) struct PageState {
     orig_bottom: f32,
     prev: Option<(String, bool, f32, bool, bool)>,
     after_break_mark: bool,
-    excl: Vec<crate::WrapArea>,
+    excl: Vec<crate::floats::WrapArea>,
     float_tables: Vec<Rect>,
     line_no: u32,
     page_items_start: usize,
