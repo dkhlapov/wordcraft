@@ -127,7 +127,7 @@ pub(crate) fn border_styles_gallery(ui: &mut Ui, app: &mut WordApp) {
                 let label = format!("{style_name} {width_text}, {color_name}");
                 let (r, resp) = ui.allocate_exact_size(vec2(34.0, 20.0), Sense::click());
                 let resp = resp.on_hover_text(&label);
-                resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
+                resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, &label));
                 // A piece of paper with the pen's line across it (automatic is black on paper).
                 ui.painter().rect_filled(r, 2.0, egui::Color32::WHITE);
                 let edge = if resp.hovered() { Stroke::new(1.5, t.accent) } else { Stroke::new(1.0, t.border) };
