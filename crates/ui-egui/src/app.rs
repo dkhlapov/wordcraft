@@ -357,6 +357,7 @@ impl WordApp {
             }
         }
         zotero::poll(self, ctx);
+        languagetool::poll(self, ctx);
         read_aloud::poll(self, ctx);
         languagetool::poll(self, ctx);
         self.clear_stale_change_picture();

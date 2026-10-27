@@ -155,7 +155,6 @@ impl WordApp {
         let WordApp {
             // App-wide.
             session: _,
-            language_tool: _,
             services: _,
             printing: _,
             print_feedback_seen: _,
@@ -195,6 +194,7 @@ impl WordApp {
             quit_requested: _,
             autosave: _,
             zotero: _,
+            language_tool: _,
             ctx: _,
             read_aloud_error: _,
             saves_in_flight: _,
@@ -246,7 +246,6 @@ impl WordApp {
         let UiState {
             // App-wide: preferences, recent lists, and the settings the session owns while
             // running.
-            language_tool: _,
             ribbon_collapsed: _,
             quick_access_toolbar: _,
             recent: _,
@@ -267,6 +266,7 @@ impl WordApp {
             editing: _,
             read_aloud_rate: _,
             read_aloud_skip_citations: _,
+            language_tool: _,
             keytips_enabled: _,
             dark_page: _,
             check_spelling: _,
