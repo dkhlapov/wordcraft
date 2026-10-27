@@ -38,9 +38,9 @@ use lex::{Tok, tokenize};
 use limits::MAX_NEST;
 pub use limits::MAX_SOURCE;
 pub use math::{latex_to_linear, linear_to_latex};
-pub use parser::{import, parse};
 #[cfg(test)]
 use parser::import_limited;
+pub use parser::{import, parse};
 #[cfg(test)]
 use units::{length_pt, spec_widths};
 

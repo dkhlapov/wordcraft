@@ -1,6 +1,6 @@
-use super::*;
 use super::merge::finish_within;
 use super::recipients::{MAX_RECORDS, header_split, table_from_rows};
+use super::*;
 
 #[test]
 fn csv_parsing() {
@@ -644,10 +644,7 @@ fn finish_reports_records_left_out_over_the_block_limit() {
     assert_eq!(text, "Alpha\nBeta\nLastFits");
     // One more: the fourth is left out, and the result and status bar say so.
     let (r, text, status) = run(&["Alpha", "Beta", "LastFits", "OverLimit"], None);
-    assert_eq!(
-        (r["records"].clone(), r["requested"].clone(), r["omitted"].clone(), r["limit"].clone()),
-        (json!(3), json!(4), json!(1), json!(3))
-    );
+    assert_eq!((r["records"].clone(), r["requested"].clone(), r["omitted"].clone(), r["limit"].clone()), (json!(3), json!(4), json!(1), json!(3)));
     assert!(r["warning"].as_str().is_some_and(|w| w.contains('1')), "{r}");
     assert_eq!(text, "Alpha\nBeta\nLastFits");
     assert!(status.contains("left out"), "{status}");
