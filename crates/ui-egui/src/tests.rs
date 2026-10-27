@@ -534,12 +534,12 @@ fn caret_animation_is_a_ui_command_and_survives_a_restart() {
     assert_eq!(a.run("ui.caretAnimation", json!({"value": true})).unwrap()["caretAnimation"], true);
 }
 
-    /// Click the lowest button named `label`: the status bar's, when the ribbon has one too.
-    fn click_lowest_button(h: &egui_kittest::Harness<'_, WordApp>, label: &str) {
-        use egui_kittest::kittest::{By, Queryable};
-        let lowest = h.query_all(By::new().role(egui::accesskit::Role::Button).label(label)).max_by(|a, b| a.rect().top().total_cmp(&b.rect().top()));
-        lowest.unwrap_or_else(|| panic!("a {label} button")).click();
-    }
+/// Click the lowest button named `label`: the status bar's, when the ribbon has one too.
+fn click_lowest_button(h: &egui_kittest::Harness<'_, WordApp>, label: &str) {
+    use egui_kittest::kittest::{By, Queryable};
+    let lowest = h.query_all(By::new().role(egui::accesskit::Role::Button).label(label)).max_by(|a, b| a.rect().top().total_cmp(&b.rect().top()));
+    lowest.unwrap_or_else(|| panic!("a {label} button")).click();
+}
 
 /// #1945: showing or hiding the Quick Access Toolbar is a UI command (no value toggles it),
 /// kept between runs; settings saved before it existed show the toolbar; it works with no
@@ -3472,37 +3472,37 @@ fn type_after_click(h: &mut egui_kittest::Harness<'_, WordApp>, what: &str, text
     assert!(body_text(h.state()).ends_with(text), "{what}: typing continues in the document");
 }
 
-    /// #1012 review: Tab or an arrow key while keytips show ends them, and the page keeps the
-    /// keyboard: egui's own focus move (it reads Tab and arrows before the keytips do) must not
-    /// carry the focus off to another widget, or the next letters reach no document.
-    #[test]
-    fn tab_or_arrows_during_keytips_leave_typing_in_the_document() {
-        use egui::Key;
-        use egui::accesskit::Role;
-        use egui_kittest::kittest::By;
-        let mut cases: Vec<(&str, Vec<Key>)> = vec![("F10, Tab", vec![Key::F10, Key::Tab]), ("F10, Down", vec![Key::F10, Key::ArrowDown])];
-        // Alt never arms keytips on macOS (Option types accents there).
-        if !cfg!(target_os = "macos") {
-            cases.push(("Alt, Down", vec![Key::AltLeft, Key::ArrowDown]));
-        }
-        for (what, keys) in cases {
-            let mut h = harness(WordApp::new(Session::new(wordcraft_doc::Document::from_text("Text")), Services::default()));
-            for _ in 0..6 {
-                h.step();
-            }
-            let (first, last) = (keys[0], keys[1]);
-            h.key_press(first);
-            h.run_steps(3);
-            assert_eq!(h.state().ui.keytips, keytips::Phase::Tabs, "{what}: keytips show");
-            h.key_press(last);
-            h.run_steps(3);
-            assert_eq!(h.state().ui.keytips, keytips::Phase::Off, "{what}: the key ends keytips");
-            assert!(h.query(By::new().role(Role::Document).predicate(|n| n.is_focused())).is_some(), "{what}: the page has the keyboard");
-            h.event(egui::Event::Text("Zq".into()));
-            h.run_steps(2);
-            assert!(body_text(h.state()).contains("Zq"), "{what}: typing reaches the document: {:?}", body_text(h.state()));
-        }
+/// #1012 review: Tab or an arrow key while keytips show ends them, and the page keeps the
+/// keyboard: egui's own focus move (it reads Tab and arrows before the keytips do) must not
+/// carry the focus off to another widget, or the next letters reach no document.
+#[test]
+fn tab_or_arrows_during_keytips_leave_typing_in_the_document() {
+    use egui::Key;
+    use egui::accesskit::Role;
+    use egui_kittest::kittest::By;
+    let mut cases: Vec<(&str, Vec<Key>)> = vec![("F10, Tab", vec![Key::F10, Key::Tab]), ("F10, Down", vec![Key::F10, Key::ArrowDown])];
+    // Alt never arms keytips on macOS (Option types accents there).
+    if !cfg!(target_os = "macos") {
+        cases.push(("Alt, Down", vec![Key::AltLeft, Key::ArrowDown]));
     }
+    for (what, keys) in cases {
+        let mut h = harness(WordApp::new(Session::new(wordcraft_doc::Document::from_text("Text")), Services::default()));
+        for _ in 0..6 {
+            h.step();
+        }
+        let (first, last) = (keys[0], keys[1]);
+        h.key_press(first);
+        h.run_steps(3);
+        assert_eq!(h.state().ui.keytips, keytips::Phase::Tabs, "{what}: keytips show");
+        h.key_press(last);
+        h.run_steps(3);
+        assert_eq!(h.state().ui.keytips, keytips::Phase::Off, "{what}: the key ends keytips");
+        assert!(h.query(By::new().role(Role::Document).predicate(|n| n.is_focused())).is_some(), "{what}: the page has the keyboard");
+        h.event(egui::Event::Text("Zq".into()));
+        h.run_steps(2);
+        assert!(body_text(h.state()).contains("Zq"), "{what}: typing reaches the document: {:?}", body_text(h.state()));
+    }
+}
 
 /// #1093: clicks on ribbon and status-bar chrome that isn't a command button (gallery tiles,
 /// tab names, empty ribbon space, View check boxes, the status bar's view buttons and
