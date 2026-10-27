@@ -32,8 +32,6 @@ pub struct LayoutCache {
     pub(crate) paras: HashMap<Key, Arc<ParaLayout>>,
     /// Narrowest and widest content of paragraphs measured for table autofit ([`Ctx::para_measured`]).
     pub(crate) measures: HashMap<Key, (f32, f32)>,
-    /// Keep-with-next lookahead: the room the next paragraph needs, by its key.
-    pub(crate) lookahead: HashMap<Key, flow::Lookahead>,
     /// The last pass's paging, for incremental pagination.
     pub(crate) pass: Option<incremental::Pass>,
     /// Outlines of pictures' opaque pixels (Tight and Through wrapping), by media key, the
@@ -66,7 +64,6 @@ impl LayoutCache {
     pub fn clear(&mut self) {
         self.paras.clear();
         self.measures.clear();
-        self.lookahead.clear();
         self.pass = None;
         self.outlines.clear();
         self.styleref = None;
