@@ -411,7 +411,7 @@ fn language_tool(app: &mut WordApp, ui: &mut Ui) {
     // The address and account are edited as a draft and applied together: a half-typed address
     // must never be used (every keystroke would send text, and the key, to it).
     let saved = (app.ui.language_tool.server.clone(), app.ui.language_tool.username.clone(), app.ui.language_tool.api_key.clone());
-    let id = egui::Id::new("options_language_tool_draft");
+    let id = egui::Id::unique("options_language_tool_draft");
     let mut draft = ui.data(|d| d.get_temp::<(String, String, String)>(id)).unwrap_or_else(|| saved.clone());
     let mut on = app.ui.language_tool.enabled;
     // Switching on waits for Apply, so text only ever goes to the server the box shows; off is always allowed.
