@@ -1,4 +1,5 @@
-use super::*;
+use super::{MeasureExt, Ui, Value, WordApp, json, semibold};
+use wordcraft_doc::section::MultiplePages;
 
 /// Labels of Page Setup's paper size (#1433), in one place in case Word's wording differs.
 pub(crate) const PAPER_LABELS: PaperLabels =

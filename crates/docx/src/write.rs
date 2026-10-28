@@ -18,7 +18,6 @@ use std::collections::{BTreeMap, HashMap};
 use wordcraft_doc::ParaProps;
 use wordcraft_doc::numbering::{Level, LevelSuffix};
 use wordcraft_doc::props::VAlign;
-use wordcraft_doc::section::MultiplePages;
 use wordcraft_doc::styles::{Style, StyleKind, TablePart};
 use wordcraft_doc::{Blocks, Document, PartKind};
 

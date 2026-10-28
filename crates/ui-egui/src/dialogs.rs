@@ -49,6 +49,7 @@ pub use mailings::{ADDRESS_PARTS, FilterRow, NEW_LIST_FIELDS, RecipientFilter, r
 #[cfg(test)]
 pub(crate) use mailings::{hold_rows, merge_order, recipient_list, visible_recipients};
 pub(crate) use page_setup::PAPER_LABELS;
+#[cfg(test)]
 use page_setup::booklet_sheet_choices;
 #[cfg(test)]
 pub(crate) use page_setup::paper_entry;
