@@ -4,15 +4,15 @@ use super::cache::{LayoutCache, Totals, env_hash, hash_of};
 use super::ctx::{Ctx, Pass, with_pct_base};
 use super::floats::{EarlyFloats, WrapArea, early_covered};
 use super::flow::{OutlinePass, place_outline_para, place_para};
-use super::incremental;
 use super::headers::{HfLinks, bookmark_pages, headers_footers, headers_footers_refer_to_pages, marks_key, mirror_even_pages, section_side};
+use super::incremental;
 use super::notes::{MAX_NOTE_PAGES, NoteSeps, note_info, place_endnotes};
 use super::page::{PageBuilder, body_top_for, foot_top_for, item_bottom};
 use super::placed::Placed;
 use super::table_flow::place_table;
 use super::{
-    Arc, Block, Counters, DocLayout, Document, FieldCtx, HashMap, LayoutOptions, Page, Path, SectionProps, SectionStart, StoryRef, TextDirection,
-    ParaLayout, ViewMode, balloons, para, vertical,
+    Arc, Block, Counters, DocLayout, Document, FieldCtx, HashMap, LayoutOptions, Page, ParaLayout, Path, SectionProps, SectionStart, StoryRef,
+    TextDirection, ViewMode, balloons, para, vertical,
 };
 
 /// How the view lays the document out: `web` for the continuous views, `reflow` for those and
@@ -673,12 +673,7 @@ pub(crate) fn layout_pass(
     // boxes of the separators and footer laid out here: their counts stay as it left them.
     if spliced && let Some((_, s)) = sections.get(pb.sect_idx) {
         let (counters, eq_count, boxes, line_no) = (ctx.counters.clone(), ctx.eq_count, ctx.boxes.total(), pb.line_no);
-        let sec = Sec {
-            si: pb.sect_idx,
-            sect: s,
-            start: SectionStart::NextPage,
-            tops: Tops { body: 0.0, first: 0.0, foot: 0.0, first_foot: 0.0 },
-        };
+        let sec = Sec { si: pb.sect_idx, sect: s, start: SectionStart::NextPage, tops: Tops { body: 0.0, first: 0.0, foot: 0.0, first_foot: 0.0 } };
         begin_section_state(&mut ctx, &mut pb, &sec, totals, mode.web);
         // Measured without the grid, as in the section loop.
         ctx.grid = para::Grid::default();
