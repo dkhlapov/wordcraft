@@ -292,7 +292,7 @@ fn paragraph_dialog(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                     if l >= BODY_LEVEL { tl!("Body Text").to_string() } else { crate::i18n::fmt(tl!("Level {n}"), &[("n", &(l + 1).to_string())]) }
                 };
                 let shown = if mixed.contains("outlineLevel") { String::new() } else { name(*outline) };
-                let combo = egui::ComboBox::from_id_salt("para_outline").selected_text(shown).show_ui(ui, |ui| {
+                let combo = craft_ui::ComboBox::from_id_salt("para_outline").selected_text(shown).show_ui(ui, |ui| {
                     for l in std::iter::once(BODY_LEVEL).chain(0..BODY_LEVEL) {
                         if ui.selectable_value(outline, l, name(l)).clicked() {
                             mixed.remove("outlineLevel");

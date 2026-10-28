@@ -1,5 +1,5 @@
 use super::pages::to_screen;
-use super::*;
+use super::{Color32, DocLayout, Rect, StoryRef, Ui, WordApp, page_at, page_screen_scale, pos2, vec2};
 
 /// Whether the view folds collapsed headings (#1745): every view but Outline.
 pub(super) fn folds_headings(app: &WordApp) -> bool {
