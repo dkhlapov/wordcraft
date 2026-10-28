@@ -1,3 +1,4 @@
+use super::fields::{run_xml, same_rev};
 use super::{
     CharProps, El, InlineObject, Item, MAX_FORM, MAX_INSTR, NoteKind, PB, PTabAlign, PTabBase, Phase, Reader, Rels, RevisionKind, RunCtx, StoryCtx,
     TextColor, children_of_choice, clean_text, int, measure, on_off_attr, placeholder_of, sink,

@@ -22,7 +22,6 @@ use wordcraft_doc::wordart::TextWarp;
 mod blocks;
 mod drawing;
 mod fields;
-use fields::{run_xml, same_rev};
 mod runs;
 mod vml;
 
