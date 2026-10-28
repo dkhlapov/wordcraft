@@ -528,7 +528,9 @@ pub fn paint_state(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32
     draw(&pen, name, c, a, green, red, orange);
 }
 
-#[allow(clippy::too_many_lines)]
+// One flat name → drawing table: every arm is independent, so its length and branching say nothing
+// about how hard it is to read.
+#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) {
     // Spacing rule: every part is one colour, and separate parts keep at least 1.25 units of clear
     // space (2.25 between stroke centre lines). Strokes stay between 1 and 15.

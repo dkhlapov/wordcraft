@@ -23,7 +23,7 @@ fn disabled_split_arrow_opens_no_menu() {
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
                 at.set(ui.cursor().min);
                 let seen = seen.clone();
-                ui.horizontal(|ui| split(ui, app, "highlight", "Split", id, Value::Null, false, None, move |_, _| seen.set(true)));
+                ui.horizontal(|ui| split(ui, app, "highlight", "Split", ButtonAction::new(id, Value::Null, false), None, move |_, _| seen.set(true)));
             },
             app,
         );
