@@ -1,4 +1,4 @@
-use super::*;
+use super::{CharProps, FieldState, InlineObject, Item, MAX_FIELD_DEPTH, PB, Phase, Reader, StoryCtx};
 
 /// Whether a piece of a field (`a`) can go in the field's code XML: it is in the same tracked
 /// insertion and deletion as the field (`b`), or none, and has no tracked formatting change. The

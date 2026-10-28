@@ -1,9 +1,18 @@
 use super::toc::is_toc;
-use super::*;
+use super::{CharProps, W, Writer, rpr};
+
+pub(super) struct FieldData<'a> {
+    pub instr: &'a str,
+    pub result: &'a str,
+    pub locked: bool,
+    pub dirty: bool,
+    pub form: &'a str,
+    pub code_xml: &'a str,
+}
 
 impl Writer<'_> {
-    #[allow(clippy::too_many_arguments)]
-    pub(super) fn field(&mut self, w: &mut W, instr: &str, result: &str, locked: bool, dirty: bool, form: &str, code_xml: &str, props: &CharProps) {
+    pub(super) fn field(&mut self, w: &mut W, field: FieldData<'_>, props: &CharProps) {
+        let FieldData { instr, result, locked, dirty, form, code_xml } = field;
         if self.toc_hold_end && is_toc(instr) {
             // A TOC heading's field opens in the first entry and closes after the last (see `toc_span`).
             self.toc_hold_end = false;
