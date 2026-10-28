@@ -1,7 +1,7 @@
 use super::arrange::{align_menu, group_menu, rotate_menu, rotation_field, wrap_menu};
 use super::common::{esc_cancelled, mi, stack};
 use super::shape::alt_text_group;
-use super::{MeasureExt, Target, Ui, WordApp, big, group, json, menu_button, small};
+use super::{MeasureExt, Target, Ui, WordApp, big, group, json, menu_button, small, split};
 
 /// Draws the Picture Format tab's Adjust, Picture Styles, Accessibility (Alt Text), Arrange and
 /// Size groups.
