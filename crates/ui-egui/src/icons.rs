@@ -519,10 +519,27 @@ pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
     draw(&pen, name, c, a, green, red, orange);
 }
 
-#[allow(clippy::too_many_lines)]
 fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) {
     // Spacing rule: every part is one colour, and separate parts keep at least 1.25 units of clear
     // space (2.25 between stroke centre lines). Strokes stay between 1 and 15.
+    if draw_text(pen, name, c, a, green, red, orange)
+        || draw_insert(pen, name, c, a, green, red, orange)
+        || draw_review(pen, name, c, a, green, red, orange)
+        || draw_view(pen, name, c, a, green, red, orange)
+        || draw_chrome(pen, name, c, a, green, red, orange)
+    {
+        return;
+    }
+        for (x0, y0, x1, y1) in [(2.0, 2.0, 5.0, 2.0), (11.0, 2.0, 14.0, 2.0), (2.0, 14.0, 5.0, 14.0), (11.0, 14.0, 14.0, 14.0)] {
+            pen.line(&[(x0, y0), (x1, y1)]);
+        }
+        pen.line(&[(2.0, 2.0), (2.0, 14.0)]);
+        pen.line(&[(14.0, 2.0), (14.0, 14.0)]);
+}
+
+/// Clipboard, font, paragraph and editing icons. False when `name` is not one of them.
+#[allow(clippy::too_many_lines, unused_variables)]
+fn draw_text(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) -> bool {
     match name {
         // Clipboard
         "paste" => {
@@ -795,6 +812,15 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.dot(12.0, 9.5, 0.65, c);
             pen.dot(12.0, 12.0, 0.65, c);
         }
+        _ => return false,
+    }
+    true
+}
+
+/// Insert, design and layout icons. False when `name` is not one of them.
+#[allow(clippy::too_many_lines, unused_variables)]
+fn draw_insert(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) -> bool {
+    match name {
         // Insert
         "coverPage" => {
             pen.page_h(2.5, 1.5, 13.0);
@@ -1170,6 +1196,15 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.span(2.75, 6.75, 2.75, 13.75, a);
             pen.rows(6.0, 14.5, &[14.0]);
         }
+        _ => return false,
+    }
+    true
+}
+
+/// References, mailings and review icons. False when `name` is not one of them.
+#[allow(clippy::too_many_lines, unused_variables)]
+fn draw_review(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) -> bool {
+    match name {
         // References
         "toc" => {
             pen.page_h(2.5, 1.5, 13.0);
@@ -1510,6 +1545,15 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.acc(&[(2.0, 11.0), (4.5, 6.0), (7.0, 11.0), (9.5, 6.0), (12.0, 11.0)]);
             pen.acc(&[(2.0, 2.0), (14.0, 14.0)]);
         }
+        _ => return false,
+    }
+    true
+}
+
+/// View and table icons. False when `name` is not one of them.
+#[allow(clippy::too_many_lines, unused_variables)]
+fn draw_view(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) -> bool {
+    match name {
         // View
         "readMode" => {
             pen.fill(&[(1.5, 3.0), (6.75, 4.0), (6.75, 14.0), (1.5, 13.0)], pen.t);
@@ -1818,6 +1862,15 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.line(&[(1.5, 4.0), (1.5, 7.0)]);
             pen.pencil(2.25, 2.0, 0.8, a);
         }
+        _ => return false,
+    }
+    true
+}
+
+/// Interface chrome and the Read Aloud player. False when `name` is not one of them.
+#[allow(clippy::too_many_lines, unused_variables)]
+fn draw_chrome(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Color32, orange: Color32) -> bool {
+    match name {
         // Chrome
         // Save: into a tray, not a floppy disk.
         "save" => {
@@ -2195,14 +2248,9 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
             pen.acc(&[(9.3, 7.8), (8.0, 8.9), (8.0, 9.25)]);
             pen.dot(8.0, 11.9, 0.9, a);
         }
-        _ => {
-            for (x0, y0, x1, y1) in [(2.0, 2.0, 5.0, 2.0), (11.0, 2.0, 14.0, 2.0), (2.0, 14.0, 5.0, 14.0), (11.0, 14.0, 14.0, 14.0)] {
-                pen.line(&[(x0, y0), (x1, y1)]);
-            }
-            pen.line(&[(2.0, 2.0), (2.0, 14.0)]);
-            pen.line(&[(14.0, 2.0), (14.0, 14.0)]);
-        }
+        _ => return false,
     }
+    true
 }
 
 /// A dashed accent line across the middle (a break between two pages).

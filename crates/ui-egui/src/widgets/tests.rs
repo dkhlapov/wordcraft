@@ -38,7 +38,7 @@ fn a_press_on_a_disabled_split_button_runs_nothing() {
             move |ui, app: &mut WordApp| {
                 let at = ui.cursor().min;
                 ui.ctx().data_mut(|d| d.insert_temp(probe, at));
-                split(ui, app, "highlight", "Text Highlight Color", "format.highlight", json!({"color": "yellow"}), false, None, |_, _| {});
+                split(ui, app, "highlight", "Text Highlight Color", ButtonAction::new("format.highlight", json!({"color": "yellow"}), false), None, |_, _| {});
             },
             app,
         )
