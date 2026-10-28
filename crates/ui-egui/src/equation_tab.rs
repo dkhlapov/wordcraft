@@ -11,7 +11,7 @@ use wordcraft_engine::math_gallery::{BUILT_INS, STRUCTURES, SYMBOL_SETS, Templat
 
 use crate::WordApp;
 use crate::theme::{Tokens, regular, semibold};
-use crate::widgets::{BIG_ICON_Y, BIG_LABEL_Y, CONTENT_H, LABEL_PITCH, group, small_toggle};
+use crate::widgets::{BIG_ICON_Y, BIG_LABEL_Y, CONTENT_H, LABEL_PITCH, group, small};
 
 /// What each structure button shows.
 pub(crate) fn button_picture(id: &str) -> &'static str {
@@ -32,7 +32,17 @@ pub(crate) fn button_picture(id: &str) -> &'static str {
 }
 
 /// A rendered equation drawn into `r` (centred), or its linear text while it renders.
-fn paint_math(app: &mut WordApp, ui: &Ui, r: Rect, key: &str, linear: &str, nodes: Option<wordcraft_doc::math::Arg>, display: bool, pt: f32) {
+struct MathPreview<'a> {
+    rect: Rect,
+    key: &'a str,
+    linear: &'a str,
+    nodes: Option<wordcraft_doc::math::Arg>,
+    display: bool,
+    points: f32,
+}
+
+fn paint_math(app: &mut WordApp, ui: &Ui, preview: MathPreview<'_>) {
+    let MathPreview { rect: r, key, linear, nodes, display, points: pt } = preview;
     let nodes = nodes.unwrap_or_else(|| parse_linear(linear));
     match crate::previews::math_texture(app, ui.ctx(), key, &nodes, display, pt, r.size()) {
         Some((tex, uv)) => {
@@ -106,7 +116,7 @@ fn math_menu_button(ui: &mut Ui, app: &mut WordApp, picture: &str, label: &str, 
     }
     let pic = Rect::from_center_size(pos2(r.center().x, r.min.y + BIG_ICON_Y), vec2(40.0, 32.0));
     ui.painter().rect_filled(pic, 3.0, t.input);
-    paint_math(app, ui, pic, &format!("btn:{picture}"), picture, None, false, 12.0);
+    paint_math(app, ui, MathPreview { rect: pic, key: &format!("btn:{picture}"), linear: picture, nodes: None, display: false, points: 12.0 });
     let lines: Vec<&str> = label.split('\n').collect();
     let mut y = r.min.y + BIG_LABEL_Y;
     for (i, l) in lines.iter().enumerate() {
@@ -131,7 +141,11 @@ fn tile(ui: &mut Ui, app: &mut WordApp, tpl: &Template, size: egui::Vec2) -> boo
         ui.painter().rect_stroke(r, 2.0, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
     }
     let pt = if size.x > 120.0 { 13.0 } else { 14.0 };
-    paint_math(app, ui, r.shrink(2.0), &format!("tpl:{}", tpl.id), tpl.linear, Some(tpl.nodes()), true, pt);
+    paint_math(
+        app,
+        ui,
+        MathPreview { rect: r.shrink(2.0), key: &format!("tpl:{}", tpl.id), linear: tpl.linear, nodes: Some(tpl.nodes()), display: true, points: pt },
+    );
     crate::widgets::describe_button(&resp, tl!(tpl.label), true, None);
     resp.on_hover_text(tl!(tpl.label)).clicked()
 }
@@ -180,7 +194,11 @@ pub fn builtin_menu(ui: &mut Ui, app: &mut WordApp) {
             if resp.hovered() {
                 ui.painter().rect_stroke(r, 2.0, Stroke::new(1.5, t.accent), egui::StrokeKind::Inside);
             }
-            paint_math(app, ui, r.shrink(2.0), &format!("builtin:{id}"), lin, None, true, 11.0);
+            paint_math(
+                app,
+                ui,
+                MathPreview { rect: r.shrink(2.0), key: &format!("builtin:{id}"), linear: lin, nodes: None, display: true, points: 11.0 },
+            );
             crate::widgets::describe_button(&resp, tl!(label), true, None);
             if resp.clicked() {
                 let _ = app.run("insert.equation", json!({"builtin": id}));
@@ -313,7 +331,7 @@ fn symbol_button(ui: &mut Ui, app: &mut WordApp, c: char, t: &Tokens) -> bool {
     }
     let s = c.to_string();
     let nodes = vec![wordcraft_doc::math::MNode::Run(wordcraft_doc::math::MRun { text: s.clone(), lit: true, ..Default::default() })];
-    paint_math(app, ui, r, &format!("sym:{s}"), &s, Some(nodes), false, 11.0);
+    paint_math(app, ui, MathPreview { rect: r, key: &format!("sym:{s}"), linear: &s, nodes: Some(nodes), display: false, points: 11.0 });
     let display = math_placeholder(ui, &s);
     let name =
         wordcraft_doc::math_symbols::name_of(c).map(|n| format!("{display}  \\{n}")).unwrap_or_else(|| format!("{display}  U+{:04X}", c as u32));
@@ -328,25 +346,32 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.spacing_mut().item_spacing = vec2(1.0, 0.0);
             let latex = app.session.math_latex;
-            small_toggle(
+            small(
                 ui,
                 app,
                 "equation",
                 Some("Unicode"),
                 "Type equations in the linear format (UnicodeMath)",
-                "equation.inputFormat",
-                json!({"format": "unicode"}),
-                !latex,
+                crate::widgets::ButtonAction::toggle("equation.inputFormat", json!({"format": "unicode"}), !latex),
             );
-            small_toggle(ui, app, "formula", Some("LaTeX"), "Type equations in LaTeX", "equation.inputFormat", json!({"format": "latex"}), latex);
+            small(
+                ui,
+                app,
+                "formula",
+                Some("LaTeX"),
+                "Type equations in LaTeX",
+                crate::widgets::ButtonAction::toggle("equation.inputFormat", json!({"format": "latex"}), latex),
+            );
             crate::widgets::menu_button(
                 ui,
                 app,
-                "replace",
-                Some("Convert"),
-                "Convert between built-up and linear form",
-                false,
-                "equation.convert",
+                crate::widgets::MenuButtonOptions::new(
+                    "replace",
+                    Some("Convert"),
+                    "Convert between built-up and linear form",
+                    false,
+                    "equation.convert",
+                ),
                 |ui, app| {
                     for (label, to, all) in [
                         ("Current - Professional", "professional", false),
@@ -366,15 +391,13 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.spacing_mut().item_spacing = vec2(1.0, 0.0);
             let normal = app.session.math_normal_text;
-            small_toggle(
+            small(
                 ui,
                 app,
                 "case",
                 Some("Normal Text"),
                 "Type normal (non-math) text in the equation",
-                "equation.normalText",
-                json!({}),
-                normal,
+                crate::widgets::ButtonAction::toggle("equation.normalText", json!({}), normal),
             );
         });
     });
@@ -391,35 +414,29 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             let info = app.session.run("equation.get", &json!({})).ok();
             let display = info.as_ref().and_then(|v| v.get("display")).and_then(|v| v.as_bool()).unwrap_or(false);
             let numbered = info.as_ref().and_then(|v| v.get("linear")).and_then(|v| v.as_str()).is_some_and(|l| l.contains('#'));
-            small_toggle(
+            small(
                 ui,
                 app,
                 "alignCenter",
                 Some("Display"),
                 "Show the equation on a line of its own",
-                "equation.display",
-                json!({"value": true}),
-                display,
+                crate::widgets::ButtonAction::toggle("equation.display", json!({"value": true}), display),
             );
-            small_toggle(
+            small(
                 ui,
                 app,
                 "alignLeft",
                 Some("Inline"),
                 "Show the equation in the line of text",
-                "equation.display",
-                json!({"value": false}),
-                !display,
+                crate::widgets::ButtonAction::toggle("equation.display", json!({"value": false}), !display),
             );
-            small_toggle(
+            small(
                 ui,
                 app,
                 "numbering",
                 Some("Number"),
                 "Number the equation; the number sits at the right margin (or type # then the number)",
-                "equation.number",
-                json!({}),
-                numbered,
+                crate::widgets::ButtonAction::toggle("equation.number", json!({}), numbered),
             );
         });
         ui.vertical(|ui| {
@@ -427,11 +444,13 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             crate::widgets::menu_button(
                 ui,
                 app,
-                "justify",
-                Some("Justification"),
-                "Justification of a display equation",
-                false,
-                "equation.justify",
+                crate::widgets::MenuButtonOptions::new(
+                    "justify",
+                    Some("Justification"),
+                    "Justification of a display equation",
+                    false,
+                    "equation.justify",
+                ),
                 |ui, app| {
                     for (label, jc) in [("Left", "left"), ("Right", "right"), ("Centered", "center"), ("Centered as Group", "centerGroup")] {
                         if ui.button(tl!(label)).clicked() {

@@ -564,7 +564,7 @@ fn commands_focus_skips_a_text_field() {
             });
             // A combo whose name matches Home's first control, then Cut.
             let _ = crate::widgets::combo(ui, "Paste", 100.0, "", &[], None);
-            crate::widgets::small(ui, app, "cut", None, "Cut", "edit.cut", serde_json::json!({}), false);
+            crate::widgets::small(ui, app, "cut", None, "Cut", crate::widgets::ButtonAction::new("edit.cut", serde_json::json!({}), false));
         },
         app(),
     );
