@@ -147,7 +147,7 @@ struct PagePointer<'a> {
 }
 
 fn handle_page_pointer(app: &mut WordApp, pointer: PagePointer<'_>) {
-    let PagePointer { ui, resp, layout, p, page, x, y, story, fold_min } = pointer;
+    let PagePointer { ui, resp, layout, p, page, x, y, story, .. } = pointer;
     let mods = ui.input(|i| i.modifiers);
     if skip_equation_or_outline(app, &pointer) {
         return;
@@ -232,7 +232,7 @@ fn handle_primary_press(
     hf_zone: Option<(Option<StoryRef>, bool)>,
     hf_enter: bool,
 ) {
-    let PagePointer { ui, layout, p, page, x, y, story, .. } = *pointer;
+    let PagePointer { ui, layout, p, page, x, y, story, fold_min, .. } = *pointer;
     let now = ui.input(|i| i.time);
     let (delay, dist) = ui.ctx().options(|o| (o.input_options.max_double_click_delay, o.input_options.max_click_dist));
     let clicks = press_count(app.canvas.last_press, now, p, delay, dist);

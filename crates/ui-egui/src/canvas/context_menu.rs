@@ -1,5 +1,5 @@
 use super::folds::folds_headings;
-use super::{Ui, WordApp, json};
+use super::{StoryRef, Ui, WordApp, json};
 
 /// The spelling suggestions and synonyms the context menu offers for the selection or the word
 /// at the caret.
