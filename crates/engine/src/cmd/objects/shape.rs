@@ -1,5 +1,5 @@
 use super::select::{all_objects, edit_obj, picked_objects, selected, selected_all, with_obj};
-use super::*;
+use super::{CmdError, CmdResult, InlineObject, Pos, Rgb, Session, StoryRef, TextBody, Value, json, p};
 
 pub(super) const NO_TEXT_BOX: &str = "select a text box first";
 
@@ -193,7 +193,7 @@ pub(crate) fn picture_fill(s: &mut Session, v: &Value) -> CmdResult {
         }
         (None, None) => {
             s.ui_requests.push(json!({"open": "shapeFillPicture"}));
-            return sel_result(s);
+            return crate::cmd::sel_result(s);
         }
     };
     if bytes.len() > MAX_FILL_PICTURE {
