@@ -1,6 +1,6 @@
 use super::cells::{cell, with_cells, with_table};
 use super::{
-    Align, Border, BorderStyle, Borders, CmdError, CmdResult, HeightRule, Path, Pos, Rgb, Selection, Session, StoryRef, Table, TextDirection, VAlign,
+    Align, Border, BorderStyle, Borders, CmdError, CmdResult, HeightRule, Path, Pos, Selection, Session, StoryRef, Table, TextDirection, VAlign,
     Value, json, p, sel_result,
 };
 
