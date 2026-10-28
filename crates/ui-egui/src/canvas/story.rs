@@ -1,4 +1,4 @@
-use super::*;
+use super::{DocLayout, PartKind, Rect, StoryRef, WordApp, pos2, vec2};
 
 /// The text box story being edited: a turned text box showing it is drawn straight (Word).
 pub(crate) fn edited_box(app: &WordApp) -> Option<u32> {
