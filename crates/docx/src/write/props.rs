@@ -253,6 +253,42 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
     toggle(w, "w:keepNext", p.keep_next);
     toggle(w, "w:keepLines", p.keep_lines);
     toggle(w, "w:pageBreakBefore", p.page_break_before);
+    write_frame(w, p, framed);
+    toggle(w, "w:widowControl", p.widow_control);
+    if let Some(nr) = p.numbering {
+        w.open("w:numPr", &[]);
+        w.val("w:ilvl", &n(nr.level.min(8) as i64));
+        w.val("w:numId", &n(nr.num as i64));
+        if let Some(a) = num_change {
+            let refs: Vec<(&str, &str)> = a.iter().map(|(k, v)| (*k, v.as_str())).collect();
+            w.empty("w:numberingChange", &refs);
+        }
+        w.close("w:numPr");
+    }
+    toggle(w, "w:suppressLineNumbers", p.suppress_line_numbers);
+    if let Some(b) = &p.borders {
+        borders(w, "w:pBdr", b, Some("w:between"), &[]);
+    }
+    if let Some(s) = p.shading {
+        w.empty("w:shd", &[("w:val", "clear"), ("w:color", "auto"), ("w:fill", &s.hex())]);
+    }
+    write_tabs(w, p);
+    write_text_flow(w, p);
+    write_spacing(w, p);
+    write_indentation(w, p);
+    toggle(w, "w:contextualSpacing", p.contextual_spacing);
+    toggle(w, "w:mirrorIndents", p.mirror_indents);
+    if let Some(a) = p.align {
+        w.val("w:jc", align_val(a));
+    }
+    if let Some(l) = p.outline_level {
+        w.val("w:outlineLvl", &n(l.min(9) as i64));
+    }
+    // [MS-DOCX] extension: every part root declares `w15` and lists it in `mc:Ignorable`.
+    toggle(w, "w15:collapsed", p.collapsed);
+}
+
+fn write_frame(w: &mut W, p: &ParaProps, framed: bool) {
     if framed && let Some(lines) = p.drop_cap.filter(|l| *l > 0) {
         // ECMA-376 §17.3.1.11: the drop cap's frame — dropped or in the margin, the lines it
         // spans and its distance from the text (`w:hSpace`, twips).
@@ -295,24 +331,9 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
         }
         w.empty("w:framePr", &a);
     }
-    toggle(w, "w:widowControl", p.widow_control);
-    if let Some(nr) = p.numbering {
-        w.open("w:numPr", &[]);
-        w.val("w:ilvl", &n(nr.level.min(8) as i64));
-        w.val("w:numId", &n(nr.num as i64));
-        if let Some(a) = num_change {
-            let refs: Vec<(&str, &str)> = a.iter().map(|(k, v)| (*k, v.as_str())).collect();
-            w.empty("w:numberingChange", &refs);
-        }
-        w.close("w:numPr");
-    }
-    toggle(w, "w:suppressLineNumbers", p.suppress_line_numbers);
-    if let Some(b) = &p.borders {
-        borders(w, "w:pBdr", b, Some("w:between"), &[]);
-    }
-    if let Some(s) = p.shading {
-        w.empty("w:shd", &[("w:val", "clear"), ("w:color", "auto"), ("w:fill", &s.hex())]);
-    }
+}
+
+fn write_tabs(w: &mut W, p: &ParaProps) {
     if let Some(tabs) = &p.tabs
         && !tabs.is_empty()
     {
@@ -334,6 +355,9 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
         }
         w.close("w:tabs");
     }
+}
+
+fn write_text_flow(w: &mut W, p: &ParaProps) {
     toggle(w, "w:suppressAutoHyphens", p.suppress_hyphens);
     toggle(w, "w:kinsoku", p.kinsoku);
     toggle(w, "w:wordWrap", p.word_wrap);
@@ -343,6 +367,9 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
     toggle(w, "w:autoSpaceDN", p.auto_space_dn);
     toggle(w, "w:bidi", p.bidi);
     toggle(w, "w:snapToGrid", p.snap_to_grid);
+}
+
+fn write_spacing(w: &mut W, p: &ParaProps) {
     if p.space_before.is_some()
         || p.space_after.is_some()
         || p.line_spacing.is_some()
@@ -375,6 +402,9 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
         }
         w.empty("w:spacing", &a);
     }
+}
+
+fn write_indentation(w: &mut W, p: &ParaProps) {
     let chars = [p.indent_left_chars, p.indent_right_chars, p.indent_first_chars];
     if p.indent_left.is_some() || p.indent_right.is_some() || p.indent_first.is_some() || chars.iter().any(Option::is_some) {
         let l = p.indent_left.map(twips);
@@ -404,16 +434,6 @@ pub fn ppr_inner(w: &mut W, p: &ParaProps, framed: bool, num_change: Option<&Cha
         }
         w.empty("w:ind", &a);
     }
-    toggle(w, "w:contextualSpacing", p.contextual_spacing);
-    toggle(w, "w:mirrorIndents", p.mirror_indents);
-    if let Some(a) = p.align {
-        w.val("w:jc", align_val(a));
-    }
-    if let Some(l) = p.outline_level {
-        w.val("w:outlineLvl", &n(l.min(9) as i64));
-    }
-    // [MS-DOCX] extension: every part root declares `w15` and lists it in `mc:Ignorable`.
-    toggle(w, "w15:collapsed", p.collapsed);
 }
 
 pub fn margins(w: &mut W, tag: &str, m: &[f32; 4]) {

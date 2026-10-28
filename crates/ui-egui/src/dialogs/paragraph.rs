@@ -1,4 +1,4 @@
-use super::*;
+use super::{BTreeSet, Dialog, MeasureExt, Ui, Value, WordApp, json};
 
 /// The Paragraph dialog's outline level for body text (the model's `outline_level` 9).
 pub(super) const BODY_LEVEL: u8 = 9;
