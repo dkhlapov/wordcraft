@@ -1,7 +1,7 @@
 use super::cells::{cell, with_cells, with_table};
 use super::{
-    Align, Border, BorderStyle, Borders, CmdError, CmdResult, HeightRule, Path, Pos, Rgb, Selection, Session, Table, TextDirection, VAlign, Value,
-    json, p, sel_result,
+    Align, Border, BorderStyle, Borders, CmdError, CmdResult, HeightRule, Path, Pos, Rgb, Selection, Session, StoryRef, Table, TextDirection, VAlign,
+    Value, json, p, sel_result,
 };
 
 /// Table Layout › AutoFit: Contents sizes the columns to their text, Window spreads them across
