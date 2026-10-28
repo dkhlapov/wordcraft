@@ -1,6 +1,9 @@
 use super::ctx::Outlines;
 use super::placed::Placed;
-use super::*;
+use super::{
+    Arc, Blocks, Document, Hash, HashMap, HashSet, Hasher, HideDeleted, InlineObject, LayoutOptions, Page, ParaLayout, Paragraph, SectionProps,
+    StoryRef, ViewMode, fields, styleref,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Key {
@@ -33,7 +36,7 @@ pub struct LayoutCache {
     /// Narrowest and widest content of paragraphs measured for table autofit ([`Ctx::para_measured`]).
     pub(crate) measures: HashMap<Key, (f32, f32)>,
     /// The last pass's paging, for incremental pagination.
-    pub(crate) pass: Option<incremental::Pass>,
+    pub(crate) pass: Option<super::incremental::Pass>,
     /// Outlines of pictures' opaque pixels (Tight and Through wrapping), by media key, the
     /// media's bytes (address and length) and crop. Kept from one layout to the next, so each
     /// entry holds a weak reference to its bytes: their allocation isn't freed while the entry is
