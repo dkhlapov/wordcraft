@@ -530,11 +530,11 @@ fn draw(pen: &Pen, name: &str, c: Color32, a: Color32, green: Color32, red: Colo
     {
         return;
     }
-        for (x0, y0, x1, y1) in [(2.0, 2.0, 5.0, 2.0), (11.0, 2.0, 14.0, 2.0), (2.0, 14.0, 5.0, 14.0), (11.0, 14.0, 14.0, 14.0)] {
-            pen.line(&[(x0, y0), (x1, y1)]);
-        }
-        pen.line(&[(2.0, 2.0), (2.0, 14.0)]);
-        pen.line(&[(14.0, 2.0), (14.0, 14.0)]);
+    for (x0, y0, x1, y1) in [(2.0, 2.0, 5.0, 2.0), (11.0, 2.0, 14.0, 2.0), (2.0, 14.0, 5.0, 14.0), (11.0, 14.0, 14.0, 14.0)] {
+        pen.line(&[(x0, y0), (x1, y1)]);
+    }
+    pen.line(&[(2.0, 2.0), (2.0, 14.0)]);
+    pen.line(&[(14.0, 2.0), (14.0, 14.0)]);
 }
 
 /// Clipboard, font, paragraph and editing icons. False when `name` is not one of them.
