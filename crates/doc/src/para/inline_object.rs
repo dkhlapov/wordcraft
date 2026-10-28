@@ -1,6 +1,6 @@
 use super::float::{Float, Wrap, cap_alt};
 use super::inline_kinds::{NoteKind, PTabAlign, PTabBase, RubyAlign, ShapeKind};
-use super::*;
+use super::{CharProps, Deserialize, Serialize};
 
 /// A picture's Crop to Shape outline: the shape WordCraft draws, and the file's own preset
 /// (DrawingML `prst` and its `a:avLst` adjust values) when that isn't exactly `kind`'s, so a
