@@ -542,7 +542,7 @@ fn click_split(id: &str) -> bool {
     let frame = |events: Vec<egui::Event>, app: &mut WordApp| {
         ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| {
             at.set(Rect::from_min_size(ui.cursor().min, vec2(24.0, 22.0)));
-            split(ui, app, "cut", "Split", id, Value::Object(Default::default()), false, None, |_, _| {});
+            split(ui, app, "cut", "Split", ButtonAction::new(id, Value::Object(Default::default()), false), None, |_, _| {});
         })
         .drop_without_applying_deltas();
     };
