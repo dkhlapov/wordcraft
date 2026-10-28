@@ -626,55 +626,9 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
             ids.entry(id).or_insert(*n);
         }
     }
-    // Each node's last descendant (for "is inside"), the text inside it, and how deep it goes.
-    let mut last = vec![0usize; len];
-    let mut text = vec![0u64; len];
-    let mut sub_depth = vec![0u64; len];
-    for n in all.iter().rev() {
-        let i = at(*n);
-        let l = n.last_child().and_then(|c| last.get(at(c)).copied()).unwrap_or(i);
-        let own = if n.is_text() { n.text().map_or(0, |t| t.len() as u64) } else { 0 };
-        let t = n.children().fold(own, |a, c| a.saturating_add(text.get(at(c)).copied().unwrap_or(0)));
-        let d = n.children().map(|c| sub_depth.get(at(c)).copied().unwrap_or(0)).max().unwrap_or(0).saturating_add(1);
-        if let (Some(ls), Some(ts), Some(ds)) = (last.get_mut(i), text.get_mut(i), sub_depth.get_mut(i)) {
-            *ls = l;
-            *ts = t;
-            *ds = d;
-        }
-    }
-    // `url(`s: each names a clip path, mask, filter, paint or marker. Per element, and (for text
-    // elements, whose spans are drawn with them) per subtree.
-    let svg_element = |n: Node| n.is_element() && matches!(n.tag_name().namespace(), None | Some(SVG_NS));
-    let mut urls = vec![0u64; len];
-    let mut sub_slots = vec![0u64; len];
-    let mut sub_url = vec![false; len];
-    // A `url(` is a place something is built if it names an element. (Gradients too: usvg keeps
-    // one per id, but copies its stops for every shape it paints in bounding-box units; review 9
-    // C-7.)
-    let built_ids: std::collections::HashSet<&str> = all.iter().filter(|n| n.is_element()).flat_map(|n| refs::ids(*n)).collect();
-    // The `url(`s each element names itself (attributes, `style`, matching style sheet rules).
-    for n in all.iter().filter(|n| svg_element(**n)) {
-        let mut k = 0u64;
-        graph.urls_of(*n, |_, ids| k = k.saturating_add(u64::from(ids.iter().any(|id| built_ids.contains(id)))));
-        if let Some(u) = urls.get_mut(at(*n)) {
-            *u = k;
-        }
-    }
-    // `inherit` copies the parent's clip path, mask or filter: then any element may name as many
-    // as the most any element names.
-    let inherited_urls = if graph.inherit { urls.iter().copied().max().unwrap_or(0) } else { 0 };
+    let (last, text, sub_depth) = subtree_stats(&all, len);
+    let (urls, sub_slots, sub_url, inherited_urls) = url_places(&all, &graph, len);
     let own_slots = |u: u64| 2u64.saturating_add(u).saturating_add(inherited_urls);
-    for n in all.iter().rev() {
-        let i = at(*n);
-        let u = urls.get(i).copied().unwrap_or(0);
-        let (slots, url) = n.children().fold((if svg_element(*n) { own_slots(u) } else { 0 }, u > 0), |(a, b), c| {
-            (a.saturating_add(sub_slots.get(at(c)).copied().unwrap_or(0)), b || sub_url.get(at(c)).copied().unwrap_or(false))
-        });
-        if let (Some(ss), Some(su)) = (sub_slots.get_mut(i), sub_url.get_mut(i)) {
-            *ss = slots;
-            *su = url;
-        }
-    }
     // Whether an ancestor names a `url(` (its content inherits it), and whether a text element
     // holds the node; parents come before their children.
     let mut above_url = vec![false; len];
@@ -689,7 +643,7 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
             }
         }
     }
-    let has_markers = all.iter().any(|n| svg_element(*n) && n.tag_name().name() == "marker");
+    let has_markers = all.iter().any(|n| is_svg_element(*n) && n.tag_name().name() == "marker");
     // Marker places on a shape (review 9 M-11): usvg draws a start and an end marker once per
     // shape, and a middle marker at every vertex. A path or point list has at most one vertex
     // per number or command in its data (an arc's seven numbers make at most four curves).
@@ -715,35 +669,15 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
         };
         1u64.saturating_add(data.map_or(0, |d| d.len() as u64 / 8))
     };
-    let inside = |a: Node, d: Node| at(a) < at(d) && last.get(at(a)).is_some_and(|l| at(d) <= *l);
     // usvg skips a `<use>` whose target holds a `<use>` (in the SVG namespace) linking to that
     // target (LOOPS on the target) or to the `<use>` itself (LOOPS_BACK on the `<use>`).
-    const LOOPS: u8 = 1;
-    const LOOPS_BACK: u8 = 2;
-    let mut flags = vec![0u8; len];
-    for d in &all {
-        if !(d.is_element() && d.tag_name().namespace() == Some(SVG_NS) && d.tag_name().name() == "use") {
-            continue;
-        }
-        let Some(x) = link(*d, &ids) else { continue };
-        if inside(x, *d)
-            && let Some(f) = flags.get_mut(at(x))
-        {
-            *f |= LOOPS;
-        }
-        if kind(x) == Kind::Use
-            && link(x, &ids).is_some_and(|y| inside(y, *d))
-            && let Some(f) = flags.get_mut(at(x))
-        {
-            *f |= LOOPS_BACK;
-        }
-    }
+    let flags = loop_flags(&all, &ids, &last, len);
     let flag = |n: Node, f: u8| flags.get(at(n)).is_some_and(|v| v & f != 0);
     // What a `<use>` copies.
     let copied = |u: Node<'a, 'i>| -> Option<Node<'a, 'i>> {
         let t = link(u, &ids)?;
         let skipped = t == u
-            || !svg_element(t)
+            || !is_svg_element(t)
             || flag(u, LOOPS_BACK)
             || flag(t, LOOPS)
             // A `<use>` of a `<use>` of this one: the inner one links to its own copy's origin.
@@ -753,10 +687,10 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
     // `<tref>` text and links inside each text element.
     let mut trefs: std::collections::HashMap<usize, Copies> = std::collections::HashMap::new();
     for r in &all {
-        if !(svg_element(*r) && r.tag_name().name() == "tref" && (r.has_attribute((XLINK_NS, "href")) || r.has_attribute("href"))) {
+        if !(is_svg_element(*r) && r.tag_name().name() == "tref" && (r.has_attribute((XLINK_NS, "href")) || r.has_attribute("href"))) {
             continue;
         }
-        let bytes = link(*r, &ids).filter(|t| svg_element(*t)).and_then(|t| text.get(at(t)).copied()).unwrap_or(0);
+        let bytes = link(*r, &ids).filter(|t| is_svg_element(*t)).and_then(|t| text.get(at(t)).copied()).unwrap_or(0);
         for a in r.ancestors().skip(1).filter(|a| kind(*a) == Kind::Text) {
             let e = trefs.entry(at(a)).or_default();
             *e = e.add(Copies { bytes, trefs: 1, ..Copies::default() });
@@ -787,7 +721,7 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
             _ if n == xml.root() => n.children().filter(|c| kind(*c) != Kind::Skip).collect(),
             // A filter image draws the element it links to (usvg's `feImage`).
             Kind::Group if n.tag_name().name() == "feImage" => {
-                n.children().filter(|c| kind(*c) != Kind::Skip).chain(link(n, &ids).filter(|t| *t != n && svg_element(*t))).collect()
+                n.children().filter(|c| kind(*c) != Kind::Skip).chain(link(n, &ids).filter(|t| *t != n && is_svg_element(*t))).collect()
             }
             Kind::Group => n.children().filter(|c| kind(*c) != Kind::Skip).collect(),
             Kind::Use => copied(n).into_iter().collect(),
@@ -864,7 +798,7 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
     }
     // usvg decodes a `data:` picture's data for every copy of its element: the data, copies
     // counted (base64 is four characters for three bytes).
-    for n in all.iter().filter(|n| svg_element(**n) && matches!(n.tag_name().name(), "image" | "feImage")) {
+    for n in all.iter().filter(|n| is_svg_element(**n) && matches!(n.tag_name().name(), "image" | "feImage")) {
         let len = n.attributes().filter(|a| a.name() == "href").map(|a| a.value().len() as u64).max().unwrap_or(0);
         total.image_data = total.image_data.saturating_add((len / 4 * 3).saturating_mul(made.get(at(*n)).copied().unwrap_or(0)));
     }
@@ -876,18 +810,135 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
             if let Some(slot) = depth.get_mut(at(*n)) {
                 *slot = d;
             }
-            if svg_element(*n) {
+            if is_svg_element(*n) {
                 let work = per_depth.get(d).copied().unwrap_or(u64::MAX);
                 total.matched = total.matched.saturating_add(made.get(at(*n)).copied().unwrap_or(0).saturating_mul(work));
             }
         }
     }
+    let chain = specials_cost(&all, &graph, &Built { made: &made, built: &built, last: &last, deep: &deep }, &mut total);
+    total.depth = deep.get(at(xml.root())).copied().unwrap_or(0).saturating_add(chain);
+    Ok(total)
+}
+
+type XNode<'a, 'i> = usvg::roxmltree::Node<'a, 'i>;
+
+fn is_svg_element(n: XNode) -> bool {
+    n.is_element() && matches!(n.tag_name().namespace(), None | Some(SVG_NS))
+}
+
+/// Each node's last descendant (for "is inside"), the text inside it, and how deep it goes.
+fn subtree_stats(all: &[XNode], len: usize) -> (Vec<usize>, Vec<u64>, Vec<u64>) {
+    let at = |n: XNode| n.id().get_usize();
+    let mut last = vec![0usize; len];
+    let mut text = vec![0u64; len];
+    let mut sub_depth = vec![0u64; len];
+    for n in all.iter().rev() {
+        let i = at(*n);
+        let l = n.last_child().and_then(|c| last.get(at(c)).copied()).unwrap_or(i);
+        let own = if n.is_text() { n.text().map_or(0, |t| t.len() as u64) } else { 0 };
+        let t = n.children().fold(own, |a, c| a.saturating_add(text.get(at(c)).copied().unwrap_or(0)));
+        let d = n.children().map(|c| sub_depth.get(at(c)).copied().unwrap_or(0)).max().unwrap_or(0).saturating_add(1);
+        if let (Some(ls), Some(ts), Some(ds)) = (last.get_mut(i), text.get_mut(i), sub_depth.get_mut(i)) {
+            *ls = l;
+            *ts = t;
+            *ds = d;
+        }
+    }
+    (last, text, sub_depth)
+}
+
+/// The `url(`s each element names, the slots and `url(`s in each subtree, and the most `url(`s
+/// an inherited property may add.
+fn url_places(all: &[XNode], graph: &refs::Graph, len: usize) -> (Vec<u64>, Vec<u64>, Vec<bool>, u64) {
+    let at = |n: XNode| n.id().get_usize();
+    // `url(`s: each names a clip path, mask, filter, paint or marker. Per element, and (for text
+    // elements, whose spans are drawn with them) per subtree.
+    let mut urls = vec![0u64; len];
+    let mut sub_slots = vec![0u64; len];
+    let mut sub_url = vec![false; len];
+    // A `url(` is a place something is built if it names an element. (Gradients too: usvg keeps
+    // one per id, but copies its stops for every shape it paints in bounding-box units; review 9
+    // C-7.)
+    let built_ids: std::collections::HashSet<&str> = all.iter().filter(|n| n.is_element()).flat_map(|n| refs::ids(*n)).collect();
+    // The `url(`s each element names itself (attributes, `style`, matching style sheet rules).
+    for n in all.iter().filter(|n| is_svg_element(**n)) {
+        let mut k = 0u64;
+        graph.urls_of(*n, |_, ids| k = k.saturating_add(u64::from(ids.iter().any(|id| built_ids.contains(id)))));
+        if let Some(u) = urls.get_mut(at(*n)) {
+            *u = k;
+        }
+    }
+    // `inherit` copies the parent's clip path, mask or filter: then any element may name as many
+    // as the most any element names.
+    let inherited_urls = if graph.inherit { urls.iter().copied().max().unwrap_or(0) } else { 0 };
+    let own_slots = |u: u64| 2u64.saturating_add(u).saturating_add(inherited_urls);
+    for n in all.iter().rev() {
+        let i = at(*n);
+        let u = urls.get(i).copied().unwrap_or(0);
+        let (slots, url) = n.children().fold((if is_svg_element(*n) { own_slots(u) } else { 0 }, u > 0), |(a, b), c| {
+            (a.saturating_add(sub_slots.get(at(c)).copied().unwrap_or(0)), b || sub_url.get(at(c)).copied().unwrap_or(false))
+        });
+        if let (Some(ss), Some(su)) = (sub_slots.get_mut(i), sub_url.get_mut(i)) {
+            *ss = slots;
+            *su = url;
+        }
+    }
+    (urls, sub_slots, sub_url, inherited_urls)
+}
+
+const LOOPS: u8 = 1;
+const LOOPS_BACK: u8 = 2;
+
+/// Which `<use>` targets hold a `<use>` that links back ([`LOOPS`], [`LOOPS_BACK`]); see the
+/// caller. `last` is each node's last descendant.
+fn loop_flags(all: &[XNode], ids: &std::collections::HashMap<&str, XNode>, last: &[usize], len: usize) -> Vec<u8> {
+    let at = |n: XNode| n.id().get_usize();
+    let inside = |a: XNode, d: XNode| at(a) < at(d) && last.get(at(a)).is_some_and(|l| at(d) <= *l);
+    let mut flags = vec![0u8; len];
+    for d in all {
+        if !(d.is_element() && d.tag_name().namespace() == Some(SVG_NS) && d.tag_name().name() == "use") {
+            continue;
+        }
+        let Some(x) = link(*d, ids) else { continue };
+        if inside(x, *d)
+            && let Some(f) = flags.get_mut(at(x))
+        {
+            *f |= LOOPS;
+        }
+        if kind(x) == Kind::Use
+            && link(x, ids).is_some_and(|y| inside(y, *d))
+            && let Some(f) = flags.get_mut(at(x))
+        {
+            *f |= LOOPS_BACK;
+        }
+    }
+    flags
+}
+
+/// What the walk worked out for each node (by node id).
+struct Built<'x> {
+    /// How often it is built in the picture.
+    made: &'x [u64],
+    /// What it builds where it stands.
+    built: &'x [Copies],
+    /// Its last descendant.
+    last: &'x [usize],
+    /// How deep usvg recurses to build it.
+    deep: &'x [u64],
+}
+
+/// Adds what the specials (markers, clip paths, masks, patterns, filters) cost to `total`, and
+/// returns the deepest chain of specials.
+fn specials_cost(all: &[XNode], graph: &refs::Graph, w: &Built, total: &mut Copies) -> u64 {
+    let at = |n: XNode| n.id().get_usize();
+    let (made, built, last, deep) = (w.made, w.built, w.last, w.deep);
     // How often the picture itself builds each special: for each element that names it, once per
     // copy of the element; for paint (or anything that may pass down), once per element built
     // inside it too; for a marker, once per marker place inside it.
     let mut named = vec![0u64; graph.nodes.len()];
     let mut specials: Vec<u32> = Vec::new();
-    for n in all.iter().filter(|n| svg_element(**n)) {
+    for n in all.iter().filter(|n| is_svg_element(**n)) {
         let k = made.get(at(*n)).copied().unwrap_or(0);
         if k == 0 {
             continue;
@@ -965,8 +1016,7 @@ fn copies_matching<'a, 'i>(xml: &'a usvg::roxmltree::Document<'i>, per_depth: &[
             }
         }
     }
-    total.depth = deep.get(at(xml.root())).copied().unwrap_or(0).saturating_add(chain.iter().copied().max().unwrap_or(0));
-    Ok(total)
+    chain.iter().copied().max().unwrap_or(0)
 }
 
 /// An upper bound on the vertices path or point data makes: one per number or command letter.
