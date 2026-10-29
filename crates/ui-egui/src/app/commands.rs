@@ -1,7 +1,7 @@
 use super::{
     DefaultApp, MAX_RECENT, SaveChoice, SaveInFlight, Value, WordApp, applied_font, async_saves, chrome, colors, crop, dialogs, dialogs_table_style,
-    file_dialogs, i18n, json, keeps_everything, keytips, now_ms, options, panes, paste_picture, printing, push_recent_font, system_clipboard,
-    table_pen, theme, widgets, zotero,
+    file_dialogs, i18n, json, keeps_everything, keytips, languagetool, now_ms, options, panes, paste_picture, printing, push_recent_font,
+    system_clipboard, table_pen, theme, widgets, zotero,
 };
 
 impl WordApp {

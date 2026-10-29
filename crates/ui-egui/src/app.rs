@@ -6,8 +6,8 @@ use super::state::{AutoSaveBlock, DefaultApp, PromptSave, SaveChoice, keeps_ever
 use super::{
     AwaitingSave, ControlRequest, DEFAULT_TAB, MAX_DICTIONARY, MAX_RECENT, QUIT, SaveInFlight, Session, UiState, Value, WordApp, applied_font,
     async_saves, backstage, canvas, chrome, colors, content_controls, crop, desktop_theme, dialogs, dialogs_table_style, documents, file_dialogs,
-    i18n, json, keys, keytips, options, panes, paste_picture, printing, push_recent_font, read_aloud, recent_fonts_from, ribbon, scroll,
-    system_clipboard, table_pen, theme, updates_ui, widgets, window_ui, windows, zotero,
+    i18n, json, keys, keytips, languagetool, options, panes, paste_picture, printing, push_recent_font, read_aloud, recent_fonts_from, ribbon,
+    scroll, system_clipboard, table_pen, theme, updates_ui, widgets, window_ui, windows, zotero,
 };
 
 mod commands;
