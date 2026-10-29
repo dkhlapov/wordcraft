@@ -469,7 +469,7 @@ fn language_tool(app: &mut WordApp, ui: &mut Ui) {
     };
     ui.horizontal(|ui| {
         ui.label(tl!("Language:"));
-        egui::ComboBox::from_id_salt("languagetool_language").selected_text(label(&current)).width(260.0).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt("languagetool_language").selected_text(label(&current)).width(260.0).show_ui(ui, |ui| {
             for code in ["auto", "document"] {
                 if ui.selectable_label(current == code, label(code)).clicked() {
                     let _ = app.run("ui.languageTool", json!({"language": code}));
