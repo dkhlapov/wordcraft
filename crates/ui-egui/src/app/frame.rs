@@ -10,7 +10,7 @@ impl WordApp {
     /// whatever handed it over (the command line, a macOS open event, a drop). Returns the message.
     pub fn report_open_failure(&mut self, path: &str, error: &str) -> String {
         log::warn!("{path}: {error}");
-        let msg = i18n::fmt(tl!("Couldn't open {path}: {error}"), &[("path", path), ("error", error)]);
+        let msg = crate::i18n::fmt(crate::tl!("Couldn't open {path}: {error}"), &[("path", path), ("error", error)]);
         self.status(msg.clone());
         msg
     }
